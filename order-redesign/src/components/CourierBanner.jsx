@@ -1,5 +1,11 @@
 import { Truck, ExternalLink } from 'lucide-react'
 
+// Prototype links — hardcoded to a known-good DHL Express shipment so the
+// demo lands on a real tracking page regardless of the order's data.
+const DHL_TRACKING_URL =
+  'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=3392654392'
+const DHL_HELP_URL = 'https://www.dhl.com/us-en/home/customer-service.html'
+
 // Elevates the courier + tracking link out of the order summary so customers
 // can see it without scrolling. Adopts Noon's banner pattern, in Revibe palette.
 export default function CourierBanner({ order }) {
@@ -28,7 +34,7 @@ export default function CourierBanner({ order }) {
 
       {order.trackingUrl && (
         <a
-          href={order.trackingUrl}
+          href={DHL_TRACKING_URL}
           target="_blank"
           rel="noreferrer"
           className="flex items-center justify-center gap-2 h-10 rounded-btn bg-brand text-white font-bold text-body w-full"
@@ -37,6 +43,16 @@ export default function CourierBanner({ order }) {
           <ExternalLink size={14} strokeWidth={2.25} />
         </a>
       )}
+
+      <a
+        href={DHL_HELP_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center justify-center gap-2 h-10 rounded-btn bg-brand/10 text-brand font-bold text-body w-full"
+      >
+        Need help with delivery?
+        <ExternalLink size={14} strokeWidth={2.25} />
+      </a>
     </section>
   )
 }

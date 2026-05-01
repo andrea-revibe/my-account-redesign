@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronUp, ChevronDown, HelpCircle } from 'lucide-react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import {
   ORDER_STATES,
   statusHeadline,
@@ -33,20 +33,6 @@ export default function OrderCard({ order, defaultExpanded = false }) {
       {expanded && (
         <div className="px-4 pb-4 space-y-4 border-t border-line/60 pt-4">
           <DetailRows order={order} />
-
-          {order.statusId !== 'delivered' && order.state !== 'cancelled' && (
-            <div className="flex items-center gap-2">
-              <button className="flex-1 h-9 rounded-btn border border-line/70 text-body text-ink/70 px-3 text-left">
-                Change address
-              </button>
-              <button
-                aria-label="Address help"
-                className="w-9 h-9 rounded-btn border border-line/70 grid place-items-center text-ink/60"
-              >
-                <HelpCircle size={14} />
-              </button>
-            </div>
-          )}
 
           <div className="flex items-center gap-3">
             <button className="flex-1 h-10 rounded-btn border border-brand text-brand font-bold text-body">
