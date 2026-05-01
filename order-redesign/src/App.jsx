@@ -7,6 +7,7 @@ import OrderFilters from './components/OrderFilters'
 import OrderCard from './components/OrderCard'
 import ChatFab from './components/ChatFab'
 import { ORDERS } from './data/orders'
+import { isCollapsedByDefault } from './lib/statuses'
 
 export default function App() {
   return (
@@ -25,8 +26,12 @@ export default function App() {
           <OrderFilters />
 
           <div className="space-y-3">
-            {ORDERS.map((order, i) => (
-              <OrderCard key={order.id} order={order} defaultExpanded={i === 0} />
+            {ORDERS.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                defaultExpanded={!isCollapsedByDefault(order)}
+              />
             ))}
           </div>
         </main>

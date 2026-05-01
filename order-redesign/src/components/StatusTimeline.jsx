@@ -19,17 +19,15 @@ export default function StatusTimeline({ currentStatusId, timeline = {} }) {
             {i > 0 && (
               <span
                 aria-hidden
-                className={`absolute top-3 right-1/2 w-full h-px ${
-                  reached ? 'bg-ink/40' : 'bg-line/70'
+                className={`absolute top-3 right-1/2 w-full h-0.5 ${
+                  reached ? 'bg-brand' : 'bg-line/70'
                 }`}
               />
             )}
             <span
               className={`relative z-10 grid place-items-center w-6 h-6 rounded-full ${
                 reached
-                  ? isCurrent
-                    ? 'bg-brand text-white'
-                    : 'bg-ink/40 text-white'
+                  ? 'bg-brand text-white'
                   : 'bg-white border border-line text-line'
               }`}
             >
@@ -41,7 +39,11 @@ export default function StatusTimeline({ currentStatusId, timeline = {} }) {
             </span>
             <span
               className={`mt-2 text-small leading-tight ${
-                reached ? 'text-ink' : 'text-muted'
+                isCurrent
+                  ? 'font-bold text-ink'
+                  : reached
+                  ? 'text-ink'
+                  : 'text-muted'
               }`}
             >
               {s.label}

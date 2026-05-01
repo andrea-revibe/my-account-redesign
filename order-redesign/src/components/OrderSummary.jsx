@@ -14,12 +14,10 @@ export default function OrderSummary({ order }) {
       </Row>
       <Row label="Order Date">{order.placedAt}</Row>
       <Row label="Customer Name">{order.customerName}</Row>
-      <Row label="Tracking Number">{order.trackingNumber}</Row>
-      <Row label="Track Your Order">
-        <a href="#" className="text-brand-link font-medium">
-          {order.courier}
-        </a>
-      </Row>
+      {order.trackingNumber && (
+        <Row label="Tracking Number">{order.trackingNumber}</Row>
+      )}
+      {order.courier && <Row label="Carrier">{order.courier}</Row>}
       <Row label="Order Price" emphasised>
         <span className="font-bold">
           {order.currency} {order.total.toLocaleString()}
