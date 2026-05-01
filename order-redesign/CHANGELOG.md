@@ -2,6 +2,35 @@
 
 Internal demo project. Format roughly follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — phase 3
+
+### Added
+
+- **`StatusBanner`** — tinted box rendered inside the always-visible card header (above the product row). A colored leading phrase describes *condition* (`On track`, `Arriving today`, `All done`, `Refund in progress`, `Taking longer than expected`) and a sentence describes the current step. Four tones: brand / success / warn / danger.
+- **`statusDescription(order)`** in `src/lib/statuses.js` — returns `{ tone, lead, body }` resolved in this order: cancelled state → delayed flag → status defaults. `order.statusMessage` overrides the body string in any branch.
+- New optional order fields: `delayed: true` flips the banner to the warn tone with a delay-flavored body keyed by `statusId`; `statusMessage: '…'` overrides the banner body. The iPhone 11 quality-check order is marked `delayed: true` for the demo.
+- **`pickActiveOrderId(orders)`** in `src/lib/statuses.js` — returns the id of the single most-in-flight order (highest `progressIndex × 10 + subProgressIndex`, in-flight only). Returns `null` when nothing is in flight.
+- **Order filter chips** (`All / In progress / Delivered / Cancelled`) actually filter the rendered list. State is owned by `App.jsx`; `OrderFilters` is now controlled.
+- **Date-range dropdown** with four presets (`Last 30 days / 3 months / 1 year / All time`), open/close, click-outside-to-close, active-option checkmark. Plumbed to `App.jsx` and applied via `placedAt` parsing — visibly inert today because all mock orders fall inside every range.
+- **Empty state** in the order list when filters yield zero results.
+- **"Need help with delivery?"** secondary CTA inside `CourierBanner`, soft-filled (`bg-brand/10 text-brand`), links to DHL customer service.
+- **CLAUDE.md** at the repo root — collaboration guide for future sessions.
+
+### Changed
+
+- **Auto-expand replaces auto-collapse.** Everything collapses by default; `App.jsx` auto-expands only the single most-in-flight card via `pickActiveOrderId`. Old `isCollapsedByDefault` removed.
+- **Delivered chip is green.** When `statusId === 'delivered'`, `OrderCard` overrides the data's `state: 'close'` chip and renders a green "Delivered" pill instead of the orange "Close" one.
+- **`StoreCreditsCard` redesigned.** AED amount now renders with a purple→magenta gradient (`from-[rgb(115,65,186)] to-accent`, `bg-clip-text`). Voucher row collapsed to a single line: code + clipboard icon button. Info button removed. Section spacing tightened.
+- **`OrderFilters` flattened.** Card wrapper dropped; search field + range dropdown side-by-side; status chip row underneath.
+- **`CourierBanner` "Track order"** URL hardcoded to a known-good DHL Express test shipment (`tracking-id=3392654392`) so the demo always lands on a real tracking page.
+- **"Raise a claim"** outlined-purple on delivered orders (matches "Download receipt"); muted gray on every other state.
+- **"Orders" heading** now renders correctly. Removed the unused `colors.page` token from `tailwind.config.js` to fix a `text-page` color/font-size collision that had been making the heading white-on-white.
+
+### Removed
+
+- **"Change address" button + its help icon.** Customer-service contact for delivery now lives in the new "Need help with delivery?" CTA inside `CourierBanner`.
+- **`isCollapsedByDefault`** in `src/lib/statuses.js` — superseded by `pickActiveOrderId`.
+
 ## [Unreleased] — phase 2
 
 ### Added

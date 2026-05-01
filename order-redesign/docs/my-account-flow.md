@@ -26,18 +26,21 @@ for visual fidelity but not wired up.
 **In scope**
 
 - Order list with five demo orders, one per top-level state plus a cancelled order.
-- Per-order collapsed summary card.
+- Per-order collapsed summary card with status banner.
 - Per-order expanded view with full timeline, courier banner, sub-timeline, and order summary.
-- Auto-collapse rules for terminal states.
+- Auto-expand rule: only the single most in-flight order is expanded by default; the rest collapse.
+- Status chip row that filters the list (`All / In progress / Delivered / Cancelled`).
+- Status banner with `delayed` and `statusMessage` overrides.
 
 **Out of scope (faked or stubbed)**
 
 - Authentication, real backend, real customer data.
-- Search and filter logic in the orders area.
-- The store-credits card (purely visual).
+- Site-wide search and the in-list "Find items" search field.
+- Date-range dropdown effect on the list (logic is wired but all mock orders fall inside every range).
+- The store-credits card (purely visual; the gradient amount and clipboard icon are decorative).
 - Right-to-left and Arabic localisation.
-- Address-change flow, receipt-download flow, claims flow.
-- Real courier tracking — the "Track order" button links to DHL's generic tracking page.
+- Receipt-download flow and claims flow.
+- Real courier tracking — the "Track order" button hardcodes a known-good DHL Express test shipment so the demo always lands on a real tracking page.
 
 ---
 
@@ -53,7 +56,8 @@ When a card is **collapsed**, the customer sees:
 
 - A status icon + headline (e.g. "Out for delivery", "At quality check", "Delivered", "Cancelled").
 - A subline with the most relevant timestamp (forward-looking ETA when DHL provides one, otherwise the most recent status timestamp).
-- A state chip on the right when the order has a special state (Close, Cancelled).
+- A state chip on the right when relevant. Delivered orders carry a green "Delivered" chip (overrides the data's `state: 'close'`); cancelled orders carry a red "Cancelled" chip.
+- A tinted **status banner** with a leading condition phrase and a descriptive sentence (see §3, "Status banner").
 - The product image, name, and variant.
 - The amount paid.
 - The order ID.
@@ -62,29 +66,34 @@ When a card is **expanded**, everything above remains visible at the top, and
 below it the customer sees:
 
 - Phone, address, and quantity.
-- "Change address" (only while the order can still be redirected — see §2.3).
-- "Download receipt" and "Raise a claim" (always available).
-- The courier banner (only while the order is shipped or delivered).
+- "Download receipt" and "Raise a claim" (always available; "Raise a claim" turns outlined-purple on delivered orders to match "Download receipt", muted gray otherwise).
+- The courier banner (only while the order is shipped or delivered) with its primary "Track order" CTA and a soft "Need help with delivery?" secondary CTA.
 - The four-step horizontal status timeline.
 - The vertical shipping sub-timeline (only while the order is shipped).
 - The order summary table.
 
-### 2.2 Auto-collapse rules
+### 2.2 Auto-expand rule
 
 ```mermaid
 flowchart TD
-    Land[Customer lands on My Account] --> Render[Render order list]
-    Render --> Decide{Is order delivered<br/>or cancelled?}
-    Decide -->|Yes| C[Render collapsed]
-    Decide -->|No| E[Render expanded]
-    C --> Tap[Customer can tap header to expand]
-    E --> TapClose[Customer can tap header to collapse]
+    Land[Customer lands on My Account] --> Render[Filter orders by chip + range]
+    Render --> Pick[pickActiveOrderId: highest progressIndex<br/>among non-delivered, non-cancelled]
+    Pick --> Decide{Order is the active one?}
+    Decide -->|Yes| E[Render expanded by default]
+    Decide -->|No| C[Render collapsed by default]
+    C --> Tap[Tap header to expand]
+    E --> TapClose[Tap header to collapse]
 ```
 
-Terminal-state orders (delivered or cancelled) do not need attention by
-default, so they start collapsed to keep the list scannable. In-progress
-orders (created, quality check, shipped) start expanded so the customer
-sees what's happening without an extra tap.
+Every card collapses by default. `pickActiveOrderId(orders)` returns the id
+of the single most-in-flight order — the one with the highest pipeline
+progress (`progressIndex × 10 + subProgressIndex`, in-flight only) — and
+`App.jsx` passes `defaultExpanded` only to that card. The rule operates on
+the *filtered* list, so picking the "Delivered" chip auto-expands nothing
+(no order is in flight), while "All" or "In progress" auto-expands the most
+progressed open order. Once the customer taps a card, their state sticks
+across filter changes (state lives in `OrderCard`, not derived from
+`activeId`).
 
 ### 2.3 Top-level state machine
 
@@ -125,13 +134,13 @@ longer relevant. This avoids having "delivered" in two places at once.
 
 ### 2.5 Per-state behaviour cheat sheet
 
-| Top-level state | Collapsed by default | Headline copy | Courier banner | Sub-timeline | Change address shown |
-|---|---|---|---|---|---|
-| created | No | "Order placed" | No | No | Yes |
-| quality_check | No | "At quality check" | No | No | Yes |
-| shipped | No | sub-status label (e.g. "Out for delivery") | Yes | Yes | Yes |
-| delivered | Yes | "Delivered" | Yes (with completed copy) | No | No |
-| cancelled (any prior status) | Yes | "Cancelled" | No | No | No |
+| Top-level state | Auto-expanded | Headline copy | Status banner lead | Banner tone | Header chip | Courier banner | Sub-timeline |
+|---|---|---|---|---|---|---|---|
+| created | If most in-flight | "Order placed" | "On track" | brand | none | No | No |
+| quality_check | If most in-flight | "At quality check" | "On track" (or "Taking longer than expected" if `delayed`) | brand / warn | none | No | No |
+| shipped (sub-status drives headline) | If most in-flight | sub-status label (e.g. "Out for delivery") | "On track" / "Arriving today" (out_for_delivery) | brand | none | Yes | Yes |
+| delivered | Never | "Delivered" | "All done" | success | green "Delivered" | Yes (with completed copy) | No |
+| cancelled (any prior status) | Never | "Cancelled" | "Refund in progress" | danger | red "Cancelled" | No | No |
 
 ---
 
@@ -155,17 +164,26 @@ the only filled brand-purple button in the app — a deliberate departure from
 the otherwise-outlined button language, because we wanted the action to read
 as a primary call-to-action.
 
-**Auto-collapse on terminal states.** Delivered and cancelled orders rarely
-need attention. Keeping them collapsed shortens the list visually and pushes
-in-progress orders to the customer's attention.
+**Auto-expand the active order, not the terminal ones.** Every card collapses
+by default; only the single most in-flight order auto-expands. This keeps the
+list scannable while still surfacing the order most likely to need attention.
+Earlier the rule was the inverse (collapse only delivered/cancelled), which
+left three or four orders open at once and pushed everything below the fold.
 
-**"Change address" hidden on delivered and cancelled orders.** It cannot be
-acted on, so it would only confuse. ("Hide on shipped" is parked — see §8.)
+**Status banner sits in the always-visible card header.** Each card carries a
+tinted banner with a colored leading phrase + descriptive sentence. The
+leading phrase describes *condition* (`On track`, `Arriving today`, `All done`,
+`Refund in progress`, `Taking longer than expected`) — never the process step,
+since the headline already shows that. Tone resolution: `state === 'cancelled'`
+→ red, `delayed === true` → orange, otherwise the per-status default (brand
+purple for in-flight, green for delivered). `order.statusMessage` overrides
+the body string in any branch — that's the production hook for ad-hoc
+backend-injected updates without changing status.
 
-**No fake "On time" chips.** The Noon-style green "On time" pill is
-attractive but it implies an SLA. We do not have an SLA model; presenting
-"On time" without one would set incorrect expectations. We will revisit this
-once an SLA contract exists.
+**Delivered chip overrides the data's `state: 'close'`.** Delivered orders carry
+`state: 'close'` in the data, but customers see a green "Delivered" pill instead
+of the orange "Close" pill. The override lives in `OrderCard`'s `SummaryHeader`
+so the data shape stays unchanged.
 
 **Filled brand-purple horizontal timeline for reached stages.** Reached
 stages and the connectors between them are filled with brand purple, not
@@ -208,13 +226,15 @@ Two parallel fields describe where the order is.
 
 - **`statusId`** drives the four-step progression timeline. Valid values: `created`, `quality_check`, `shipped`, `delivered`.
 - **`subStatusId`** is only meaningful while `statusId` is `shipped`. Valid values: `arrived_destination`, `cleared_customs`, `forwarded_to_agent`, `out_for_delivery`. May be omitted on a shipped order if DHL has not yet returned a sub-status.
-- **`state`** is a parallel "header state" used for chips and the auto-collapse rule. Valid values: `open` (default), `close`, `cancelled`. State is independent of progression — for example, a cancelled order keeps the `statusId` it had at cancellation.
+- **`state`** is a parallel "header state" used for chips and filter classification. Valid values: `open` (default), `close`, `cancelled`. State is independent of progression — for example, a cancelled order keeps the `statusId` it had at cancellation.
+- **`delayed`** *(optional, boolean)* — when true, the status banner switches to the warn (orange) tone with a delay-flavored body keyed by `statusId`.
+- **`statusMessage`** *(optional, string)* — overrides the status banner's body text. The leading phrase and tone are still computed from `state` / `delayed` / `statusId`. Production hook for ad-hoc backend-injected notes.
 
 ### 4.3 Tracking and courier fields (only present once shipped)
 
 - **`courier`** — name of the carrier shown in the banner (string). Today this is always `"DHL"`; the field exists so we can support multiple carriers later.
 - **`trackingNumber`** — courier-issued tracking number, shown in the order summary (string).
-- **`trackingUrl`** — deep link to the courier's tracking page, used by the banner CTA (string).
+- **`trackingUrl`** — gates whether the "Track order" CTA renders (truthy → render). The CTA's `href` itself is **hardcoded** to a known-good DHL Express test shipment so the demo always lands on a real tracking page; the per-order URL is ignored. Production should template `tracking-id` on `order.trackingNumber`.
 - **`estimatedDelivery`** — DHL's forward-looking ETA, used as the collapsed-card subline when present (string, free-text date). **Optional** — DHL doesn't always communicate this. Code paths must handle absence gracefully.
 
 ### 4.4 Timeline fields
@@ -242,24 +262,25 @@ Multi-item orders are out of scope for the prototype.
 
 ```
 src/
-├── App.jsx                       Page composition + auto-collapse wiring
+├── App.jsx                       Page composition; owns filter state + active-id wiring
 ├── main.jsx                      Vite entry point
 ├── index.css                     Tailwind directives + base styles
 ├── data/
 │   └── orders.js                 Mock orders array
 ├── lib/
-│   └── statuses.js               Top-level + sub-status definitions, helpers
+│   └── statuses.js               Top-level + sub-status definitions, status-banner copy + tone, pickActiveOrderId, helpers
 └── components/
     ├── PromoBar.jsx              Magenta promo strip at the top
     ├── Header.jsx                Logo, language, profile, wishlist, bag
     ├── SearchBar.jsx             Site-wide search field (decorative)
     ├── FiltersRow.jsx            Filters icon + profile chip
-    ├── StoreCreditsCard.jsx      Wallet balance card (decorative)
-    ├── OrderFilters.jsx          Date / status / search filters (decorative)
+    ├── StoreCreditsCard.jsx      Wallet balance card (gradient amount + clipboard icon; decorative)
+    ├── OrderFilters.jsx          Search field + range dropdown + status chip row (controlled)
     ├── OrderCard.jsx             The expandable order card
+    ├── StatusBanner.jsx          Tinted status banner with leading phrase + sentence
     ├── StatusTimeline.jsx        Horizontal 4-step timeline
     ├── ShippingSubTimeline.jsx   Vertical sub-status timeline
-    ├── CourierBanner.jsx         Tracking banner with carrier CTA
+    ├── CourierBanner.jsx         Tracking banner with "Track order" + "Need help with delivery?" CTAs
     ├── OrderSummary.jsx          Summary table inside the expanded card
     └── ChatFab.jsx               Floating chat-with-support button
 ```
@@ -273,17 +294,17 @@ graph TD
     App --> SearchBar
     App --> FiltersRow
     App --> StoreCreditsCard
-    App --> OrderFilters
+    App --> OrderFilters[OrderFilters<br/>search + range dropdown + chip row]
     App --> OrderCard
     App --> ChatFab
     OrderCard --> SummaryHeader[SummaryHeader<br/>status icon + headline + chip]
+    OrderCard --> StatusBanner[StatusBanner<br/>leading phrase + sentence]
     OrderCard --> ProductRow
     OrderCard --> OrderIdRow
     OrderCard --> Body[Expanded body — when open]
     Body --> DetailRows[DetailRows<br/>phone, address, quantity]
-    Body --> ChangeAddress[Change address<br/>conditional]
     Body --> Actions[Receipt + Claim buttons]
-    Body --> CourierBanner[CourierBanner<br/>shipped or delivered only]
+    Body --> CourierBanner[CourierBanner<br/>Track + Need help CTAs<br/>shipped or delivered only]
     Body --> StatusTimeline
     Body --> ShippingSubTimeline[ShippingSubTimeline<br/>shipped only]
     Body --> OrderSummary
@@ -300,8 +321,9 @@ with a fetch (or a hook) that returns an array of objects matching the shape
 in §4. No component below `App` needs to change as long as the response shape
 is preserved.
 
-The auto-collapse decision is centralised in `isCollapsedByDefault(order)`
-(`src/lib/statuses.js`), which `App.jsx` calls when mapping the order list.
+The auto-expand decision is centralised in `pickActiveOrderId(orders)`
+(`src/lib/statuses.js`). `App.jsx` calls it on the *filtered* list and passes
+`defaultExpanded={order.id === activeId}` to each card.
 
 ---
 
@@ -328,9 +350,14 @@ header and the order summary will pick up the colour treatment.
 If the courier needs different copy, branch on `order.courier` inside
 `CourierBanner.jsx`.
 
-**Change the auto-collapse rule.** Edit `isCollapsedByDefault` in
-`src/lib/statuses.js`. There is one source of truth for the rule — `App.jsx`
-calls this helper.
+**Change the auto-expand rule.** Edit `pickActiveOrderId` in
+`src/lib/statuses.js`. One source of truth — `App.jsx` calls this helper on
+the filtered list.
+
+**Change status banner copy or tone.** Edit `STATUS_DESCRIPTIONS` and
+`DELAYED_BODY` in `src/lib/statuses.js`. The leading phrase should describe
+*condition* (`On track`, `Arriving today`, etc.), not the process step. To
+add a new tone, also extend the `TONES` map in `src/components/StatusBanner.jsx`.
 
 ---
 
@@ -340,12 +367,14 @@ What looks real in the prototype but is faked:
 
 - **Order data.** Five hand-written orders in `src/data/orders.js`. Production needs a fetch endpoint returning the same shape.
 - **Authentication.** No login, no session, no per-customer scoping.
-- **DHL integration.** The "Track order" button always links to `https://www.dhl.com/track`. Production should use the order's specific tracking URL with carrier credentials handled server-side.
+- **DHL integration.** "Track order" hardcodes a known-good DHL Express test shipment (`tracking-id=3392654392`) so the demo always lands on a real tracking page. Production should template `tracking-id` on `order.trackingNumber`. "Need help with delivery?" links to DHL's generic customer-service page.
+- **`delayed` is a static flag.** In the prototype it's hand-set on `orders.js`. Production should derive lateness from comparing `estimatedDelivery` (or step ETAs) against current time / SLA. The `statusMessage` field is the production hook for ad-hoc backend-injected updates.
 - **`estimatedDelivery` format.** Currently a freeform string (`"Wed, 29 Apr 2026"`). DHL's real shape may include time windows and structured data; we'll need to revisit when integrating.
 - **Single carrier.** Code is generalised but mock data uses DHL only. Adding a second carrier requires no code change.
 - **Single-item orders.** The product object is a single entry. Multi-item orders need a `products[]` array and a layout adjustment.
-- **Change address, Download receipt, Raise a claim.** Buttons are present but do nothing. Each needs its own flow / page.
-- **Search, filters, store-credits card.** Visual placeholders, no logic.
+- **Download receipt, Raise a claim.** Buttons are present but do nothing. Each needs its own flow / page.
+- **Site-wide search, in-list "Find items" search, store-credits card.** Visual placeholders, no logic. The store credits voucher code "copy" icon doesn't actually copy.
+- **Date-range dropdown.** Logic is wired (parses `placedAt`, filters by cutoff) but visibly inert because all five mock orders fall inside every range. Status chips do filter the list.
 - **Inter font.** Production is Graphik; we substituted Inter via Google Fonts because Graphik is licensed.
 - **Brand assets.** Local copies in `public/` rather than CDN-served.
 - **No analytics or instrumentation.** No event tracking on expand/collapse, track-clicks, etc.
@@ -356,16 +385,18 @@ What looks real in the prototype but is faked:
 
 Items deliberately parked rather than built.
 
-- **Hide "Change address" on shipped orders too.** Today it's only hidden when delivered or cancelled. Once a parcel is in DHL's hands, the address can't realistically be redirected.
 - **Domestic vs international sub-status branching.** All shipped orders show all four sub-statuses (arrived in destination country → cleared customs → forwarded to third-party agent → out for delivery). For a domestic UAE shipment, "cleared customs" doesn't apply. Worth adding an `isInternational` flag and conditionally rendering.
 - **Real DHL ETA shape.** Today `estimatedDelivery` is a freeform string. Real DHL responses may carry structured date + time windows + multiple datapoints; the helper `statusSubline` and the collapsed-card UI will need updating.
-- **"On time" SLA chips.** Skipped because we have no SLA model. Worth revisiting once one exists.
+- **Derive `delayed` from data, not a flag.** Today `delayed: true` is hand-set in `orders.js`. Production should compare timestamps against an SLA contract and set the warn-tone banner automatically.
+- **Make the date-range dropdown visibly affect the demo.** Either backdate one of the mock orders past 30 days, or add a `Today` preset that excludes the older ones.
+- **Hook the in-list "Find items" search and the global search bar to anything.** Both are decorative.
+- **"Copy voucher code" actually copies.** The clipboard icon is decorative.
 - **Returned and refunded states.** Not modelled. Likely additions to `ORDER_STATES` plus their own banner copy.
 - **Re-order CTA on delivered orders.** Common pattern; not currently present.
 - **Forward-looking ETA inside `CourierBanner`.** Currently the banner copy is generic; the ETA shows in the collapsed-card subline only. Could surface in both places.
-- **Address-change flow, claim flow, receipt download.** Each is a stubbed button today.
+- **Claim flow, receipt download.** Each is a stubbed button today.
 - **Multi-item orders.** Layout change needed to render multiple `ProductRow`s.
-- **Order list grouping ("In progress" / "Completed" sections).** Considered, set aside in favour of a flat list. Worth revisiting if the list gets long enough that scanning becomes painful.
+- **Order list grouping ("In progress" / "Completed" sections).** Considered, set aside in favour of the chip-based filter. Worth revisiting if the list gets long.
 
 ---
 
@@ -375,8 +406,8 @@ This is a living document. When making one of the changes below, update the
 named section here as part of the same commit:
 
 - Adding/removing a status or sub-status → §2.3, §2.4, §4.2, §6.
-- Changing the order shape → §4.
-- Changing auto-collapse, banner visibility, or sub-timeline visibility rules → §2.5, §3.
+- Changing the order shape (including new optional fields like `delayed`, `statusMessage`) → §4.
+- Changing the auto-expand rule, banner visibility, status-banner copy/tone, or chip override rules → §2.5, §3.
 - Adding or removing a component → §5.1, §5.2.
 - Resolving an item from §8 → move it out of §8 and integrate the description into the relevant earlier section.
 

@@ -69,6 +69,104 @@ export function subProgressIndex(currentSubStatusId) {
   return i // -1 if not provided — caller handles
 }
 
+// Returns the status banner shown at the top of an expanded order card:
+// a tinted box with a colored leading phrase and an explanatory sentence.
+// Defaults are status-driven; `order.delayed` flips the tone to warn and
+// swaps the lead/body; `order.statusMessage` overrides the body text only
+// (mirrors how a backend would inject ad-hoc updates without changing the
+// underlying status).
+export function statusDescription(order) {
+  if (order.state === 'cancelled') {
+    return {
+      tone: 'danger',
+      lead: 'Refund in progress',
+      body:
+        order.statusMessage ??
+        'Your order was cancelled. Any payment will be refunded to your original payment method.',
+    }
+  }
+
+  if (order.delayed) {
+    return {
+      tone: 'warn',
+      lead: 'Taking longer than expected',
+      body: order.statusMessage ?? DELAYED_BODY[order.statusId] ?? DELAYED_BODY.default,
+    }
+  }
+
+  const base = STATUS_DESCRIPTIONS[descriptionKey(order)] ?? STATUS_DESCRIPTIONS.created
+  return {
+    tone: base.tone,
+    lead: base.lead,
+    body: order.statusMessage ?? base.body,
+  }
+}
+
+function descriptionKey(order) {
+  if (order.statusId === 'shipped' && order.subStatusId) {
+    return `shipped:${order.subStatusId}`
+  }
+  return order.statusId
+}
+
+// Leading phrases describe the *condition* (on track / arriving today / all
+// done / refund in progress), not the process step — that way they don't
+// repeat the headline already shown in the card header.
+const STATUS_DESCRIPTIONS = {
+  created: {
+    tone: 'brand',
+    lead: 'On track',
+    body:
+      "We've received your order and it's on its way to our quality lab for inspection.",
+  },
+  quality_check: {
+    tone: 'brand',
+    lead: 'On track',
+    body: 'Your device is currently undergoing a 50-point inspection.',
+  },
+  shipped: {
+    tone: 'brand',
+    lead: 'On track',
+    body: 'Your package is on its way to the destination country.',
+  },
+  'shipped:arrived_destination': {
+    tone: 'brand',
+    lead: 'On track',
+    body:
+      'Your package has arrived in the destination country and is awaiting customs clearance.',
+  },
+  'shipped:cleared_customs': {
+    tone: 'brand',
+    lead: 'On track',
+    body:
+      'Your package cleared customs and is being forwarded to the local delivery partner.',
+  },
+  'shipped:forwarded_to_agent': {
+    tone: 'brand',
+    lead: 'On track',
+    body: 'Your package has been handed to the local courier for the final mile.',
+  },
+  'shipped:out_for_delivery': {
+    tone: 'brand',
+    lead: 'Arriving today',
+    body: 'Your package is with the courier and will be delivered today.',
+  },
+  delivered: {
+    tone: 'success',
+    lead: 'All done',
+    body: 'Your order has been delivered. Enjoy your device!',
+  },
+}
+
+const DELAYED_BODY = {
+  quality_check:
+    'The inspection process is taking a bit longer than expected. Please hang tight.',
+  shipped:
+    'Your package is delayed in transit. We\'ll update you as soon as the courier provides new information.',
+  default:
+    "We've hit a small delay on this order. We'll update you as soon as we have more information.",
+}
+
 // Picks the single "most in-flight" order to auto-expand by default — the
 // non-delivered, non-cancelled order furthest along the fulfilment pipeline
 // (sub-status counts as a finer-grained tiebreaker within `shipped`). Returns

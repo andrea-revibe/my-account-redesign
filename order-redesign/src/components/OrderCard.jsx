@@ -10,6 +10,7 @@ import StatusTimeline from './StatusTimeline'
 import OrderSummary from './OrderSummary'
 import CourierBanner from './CourierBanner'
 import ShippingSubTimeline from './ShippingSubTimeline'
+import StatusBanner from './StatusBanner'
 
 // Inline-expandable order card. The header is always visible and now carries
 // status, product and price (Noon-style). The body adds the long-form details.
@@ -26,6 +27,7 @@ export default function OrderCard({ order, defaultExpanded = false }) {
         className="w-full text-left p-4 space-y-3"
       >
         <SummaryHeader order={order} state={state} expanded={expanded} />
+        <StatusBanner order={order} />
         <ProductRow order={order} />
         <OrderIdRow id={order.id} />
       </button>
@@ -38,7 +40,14 @@ export default function OrderCard({ order, defaultExpanded = false }) {
             <button className="flex-1 h-10 rounded-btn border border-brand text-brand font-bold text-body">
               Download receipt
             </button>
-            <button className="flex-1 h-10 rounded-btn border border-line text-muted font-bold text-body">
+            <button
+              className={
+                'flex-1 h-10 rounded-btn border font-bold text-body ' +
+                (order.statusId === 'delivered'
+                  ? 'border-brand text-brand'
+                  : 'border-line text-muted')
+              }
+            >
               Raise a claim
             </button>
           </div>
