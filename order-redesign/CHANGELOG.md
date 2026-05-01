@@ -6,30 +6,29 @@ Internal demo project. Format roughly follows [Keep a Changelog](https://keepach
 
 ### Added
 
-- **Shipping sub-statuses** in `src/lib/statuses.js`: `arrived_destination`, `cleared_customs`, `forwarded_to_agent`, `out_for_delivery`. Always all four, in order — international and domestic shipments render the same list for now.
-- **`ShippingSubTimeline`** — vertical sub-timeline rendered inside `OrderCard` only while `statusId === 'shipped'`. Pattern adapted from Noon's tracking screen; colors kept in Revibe palette.
-- **`CourierBanner`** — visible while `statusId` is `shipped` or `delivered`. Shows the carrier headline, an explanatory sentence about contacting the courier, and a primary "Track order" CTA linking to the courier site. Uses a filled brand-purple button — first filled CTA in the app, deliberately so the action stands out.
-- Mock orders now cover every top-level stage plus a cancelled order: `created`, `quality_check`, `shipped` (with sub-status `out_for_delivery`), `delivered`, and a cancelled-at-QC order.
-- `isCollapsedByDefault(order)` helper centralises the auto-collapse rule.
+- **Two-tier status model.** Top-level `STATUSES` (`created → quality_check → shipped → delivered`) is unchanged; new `SHIPPING_SUB_STATUSES` (`arrived_destination → cleared_customs → forwarded_to_agent → out_for_delivery`) apply only while `statusId === 'shipped'`. All four sub-statuses render in order today — international/domestic branching is parked.
+- **`ShippingSubTimeline`** — vertical sub-timeline rendered inside `OrderCard` only while `statusId === 'shipped'`. Pattern adapted from Noon's tracking screen; colours kept in Revibe palette.
+- **`CourierBanner`** — visible while `statusId` is `shipped` or `delivered`. Carrier headline, explanatory sentence about contacting the courier, primary "Track order" CTA. Uses a filled brand-purple button — first filled CTA in the app, deliberately so the action stands out.
+- Mock orders now cover every top-level stage plus a cancelled order: `created`, `quality_check`, `shipped` (with sub-status `out_for_delivery` and an `estimatedDelivery` ETA), `delivered`, and a cancelled-at-QC order.
+- New helpers in `src/lib/statuses.js`: `isCollapsedByDefault`, `statusHeadline`, `statusSubline`, `statusIconFor`, `subProgressIndex`. The collapsed-card header is driven by these so new statuses stay in sync.
+- **`estimatedDelivery`** field on the order shape (optional — DHL doesn't always provide it). When present on a shipped order the collapsed-card subline reads "Delivery by [date]"; absent, it falls back to "Updated [timestamp]".
+- `docs/my-account-flow.md` — living documentation of the orders flow for product + engineering audiences (Mermaid diagrams, data model, extension points, mocked-vs-production gap).
 
 ### Changed
 
-- Auto-collapse delivered + cancelled orders by default. Wired in `App.jsx`.
-- `OrderSummary` no longer carries the courier as a hyperlink (it now lives in `CourierBanner`); replaced with a static "Carrier" row, hidden when the order has no carrier yet.
+- **Collapsed card rebuilt** in Noon-summary style: status icon + headline + state chip + chevron, divider, product image with name/variant/total, divider, order ID. The chip is now visible at-a-glance, so cancelled orders read as cancelled even when collapsed.
+- **`StatusTimeline` filled with brand colour** for reached stages (circles + 2px connectors). The current step's label is bold so it stands out without changing the dot treatment.
+- **Auto-collapse** delivered + cancelled orders by default, wired through `isCollapsedByDefault` in `App.jsx`.
+- **Expanded body deduped** — dropped the inline `ProductBlock` and the "Date & Time" + "Total Amount" detail rows since the new header carries them.
+- **`OrderSummary`** no longer renders the courier as a hyperlink (the `CourierBanner` owns that); replaced with a static "Carrier" row that hides when the order has no carrier yet.
+- **"Change address"** hidden on delivered and cancelled orders. "Download receipt" and "Raise a claim" stay visible at every stage.
 - Courier across all mock orders switched from Quiqup to **DHL**.
+- README rewritten — replaced the Vite starter boilerplate with a project-specific overview.
 
-### Notes
+### Known trade-offs
 
-- `OrderCard` is getting tall when fully expanded for shipped orders (banner + horizontal timeline + vertical sub-timeline + summary). Acceptable for phase 2; flag for review if real users complain.
-
-### Changed (rework after first review)
-
-- **`OrderCard` collapsed header rebuilt** to match the Noon-style summary card: status icon + headline + state chip + chevron, divider, product image with name/variant/total, divider, order ID. The chip is now visible at-a-glance, so cancelled orders read as cancelled even when collapsed.
-- New helpers in `lib/statuses.js` — `statusHeadline`, `statusSubline`, `statusIconFor` — drive the new header so adding a status keeps the card in sync.
-- Expanded body trimmed to avoid duplicating what the header already shows: dropped the inline `ProductBlock`, dropped "Date & Time" and "Total Amount" rows from the detail block.
-- **`StatusTimeline` filled with brand colour** for reached stages (circles + connectors). Connector thickness bumped to 2px for legibility. The current step's label is now bold so it stands out without changing the dot treatment.
-- **`estimatedDelivery`** added to the order shape (optional — DHL doesn't always provide it). When present on a shipped order, the collapsed-card subline switches from "Updated [timestamp]" to "Delivery by [date]"; absent, it falls back. Mock order #89643 carries an example value.
-- **Hide "Change address"** + its help button on delivered and cancelled orders. "Download receipt" and "Raise a claim" stay visible at every stage.
+- `OrderCard` is tall when fully expanded for shipped orders (header + banner + horizontal timeline + vertical sub-timeline + summary). Acceptable for phase 2; flag for review if real users complain.
+- All shipping sub-statuses always render, even on shipments that wouldn't realistically clear customs. Intentional for the demo; see `docs/my-account-flow.md` § 8.
 
 ## [0.1.0] — 2026-05-01 — phase 1 baseline
 

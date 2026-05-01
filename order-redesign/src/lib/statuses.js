@@ -69,8 +69,19 @@ export function subProgressIndex(currentSubStatusId) {
   return i // -1 if not provided — caller handles
 }
 
-export function isCollapsedByDefault(order) {
-  return order.statusId === 'delivered' || order.state === 'cancelled'
+// Picks the single "most in-flight" order to auto-expand by default — the
+// non-delivered, non-cancelled order furthest along the fulfilment pipeline
+// (sub-status counts as a finer-grained tiebreaker within `shipped`). Returns
+// null when nothing in the list is in flight (e.g. only delivered orders).
+export function pickActiveOrderId(orders) {
+  const inFlight = orders.filter(
+    (o) => o.statusId !== 'delivered' && o.state !== 'cancelled',
+  )
+  if (inFlight.length === 0) return null
+  const rank = (o) =>
+    progressIndex(o.statusId) * 10 + Math.max(0, subProgressIndex(o.subStatusId))
+  const sorted = [...inFlight].sort((a, b) => rank(b) - rank(a))
+  return sorted[0].id
 }
 
 // Headline shown in the collapsed-card header. Sub-status takes precedence

@@ -22,7 +22,6 @@ export default {
           warnInk: 'rgb(180, 95, 6)',
           danger: 'rgb(220, 38, 38)',
         },
-        page: '#FFFFFF',
         surface: '#FFFFFF',
         searchBg: 'rgb(244, 240, 250)',
       },

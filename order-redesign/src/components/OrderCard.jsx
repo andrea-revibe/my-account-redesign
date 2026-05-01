@@ -81,6 +81,12 @@ export default function OrderCard({ order, defaultExpanded = false }) {
 function SummaryHeader({ order, state, expanded }) {
   const subline = statusSubline(order)
   const { Icon, bg, fg } = statusIconFor(order)
+  // Delivered orders carry state:'close' in the data, but the user-facing
+  // chip should read "Delivered" in green to match the status, not "Close".
+  const chip =
+    order.statusId === 'delivered' && order.state !== 'cancelled'
+      ? { text: 'Delivered', bg: 'bg-green-50', fg: 'text-success' }
+      : state.chip
   return (
     <div className="flex items-start gap-3">
       <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${bg} ${fg}`}>
@@ -90,11 +96,11 @@ function SummaryHeader({ order, state, expanded }) {
         <p className="font-bold text-ink">{statusHeadline(order)}</p>
         {subline && <p className="text-small text-muted mt-0.5">{subline}</p>}
       </div>
-      {state.chip && (
+      {chip && (
         <span
-          className={`px-2.5 py-1 rounded-btn text-small font-semibold whitespace-nowrap ${state.chip.bg} ${state.chip.fg}`}
+          className={`px-2.5 py-1 rounded-btn text-small font-semibold whitespace-nowrap ${chip.bg} ${chip.fg}`}
         >
-          {state.chip.text}
+          {chip.text}
         </span>
       )}
       <span
