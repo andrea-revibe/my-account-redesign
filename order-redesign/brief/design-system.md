@@ -65,21 +65,32 @@
 
 ## Existing order states (faithful recreation reference)
 
-Progression statuses (timeline):
+Top-level progression statuses (horizontal timeline, always 4 steps):
 
 - Order created
 - At quality check
 - Shipped
 - Delivered
 
+Shipping sub-statuses (vertical sub-timeline, only while top status is
+`shipped`):
+
+- Arrived in destination country
+- Cleared customs
+- Forwarded to third-party agent
+- Out for delivery
+
+Note: there is intentionally no "delivered" sub-status — when the package
+is delivered, the order transitions to the top-level Delivered stage.
+
 Header / summary states (chips and labels):
 
 - Open (no chip)
 - Close — orange chip on the order header
-- Cancelled — red text in the order summary
+- Cancelled — red text in the order summary; auto-collapses the card
 
-Phase-2 candidates noted but not yet wired: Out for delivery, Returned,
-Refunded.
+Phase-2+ candidates noted but not yet wired: Returned, Refunded, Out for
+delivery time-window pickers.
 
 ## Notes / oddities
 

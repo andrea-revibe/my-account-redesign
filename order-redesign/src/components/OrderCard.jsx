@@ -1,49 +1,52 @@
 import { useState } from 'react'
-import { ChevronUp, ChevronDown, ShoppingBag, HelpCircle } from 'lucide-react'
-import { ORDER_STATES } from '../lib/statuses'
+import { ChevronUp, ChevronDown, HelpCircle } from 'lucide-react'
+import {
+  ORDER_STATES,
+  statusHeadline,
+  statusSubline,
+  statusIconFor,
+} from '../lib/statuses'
 import StatusTimeline from './StatusTimeline'
 import OrderSummary from './OrderSummary'
+import CourierBanner from './CourierBanner'
+import ShippingSubTimeline from './ShippingSubTimeline'
 
-// Inline-expandable order card. defaultExpanded prop lets phase 2 auto-collapse
-// delivered orders without changing the component.
+// Inline-expandable order card. The header is always visible and now carries
+// status, product and price (Noon-style). The body adds the long-form details.
 export default function OrderCard({ order, defaultExpanded = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const state = ORDER_STATES[order.state] ?? ORDER_STATES.open
 
   return (
     <article className="bg-surface rounded-card border border-line/60 overflow-hidden">
-      <header className="p-4 flex items-start gap-3">
-        <span className="w-7 h-7 rounded-full bg-brand/10 grid place-items-center text-brand shrink-0">
-          <ShoppingBag size={14} strokeWidth={2.25} />
-        </span>
-        <div className="flex-1 text-body">
-          <span className="font-bold text-ink">Order: </span>
-          <span className="font-bold text-brand">{order.id}</span>
-        </div>
-        <button
-          aria-label={expanded ? 'Collapse order' : 'Expand order'}
-          onClick={() => setExpanded((v) => !v)}
-          className="w-7 h-7 rounded-full border border-line/70 grid place-items-center text-ink/70"
-        >
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-      </header>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="w-full text-left p-4 space-y-3"
+      >
+        <SummaryHeader order={order} state={state} expanded={expanded} />
+        <ProductRow order={order} />
+        <OrderIdRow id={order.id} />
+      </button>
 
       {expanded && (
-        <div className="px-4 pb-4 space-y-4">
-          <DetailRows order={order} state={state} />
+        <div className="px-4 pb-4 space-y-4 border-t border-line/60 pt-4">
+          <DetailRows order={order} />
 
-          <div className="flex items-center gap-2">
-            <button className="flex-1 h-9 rounded-btn border border-line/70 text-body text-ink/70 px-3 text-left">
-              Change address
-            </button>
-            <button
-              aria-label="Address help"
-              className="w-9 h-9 rounded-btn border border-line/70 grid place-items-center text-ink/60"
-            >
-              <HelpCircle size={14} />
-            </button>
-          </div>
+          {order.statusId !== 'delivered' && order.state !== 'cancelled' && (
+            <div className="flex items-center gap-2">
+              <button className="flex-1 h-9 rounded-btn border border-line/70 text-body text-ink/70 px-3 text-left">
+                Change address
+              </button>
+              <button
+                aria-label="Address help"
+                className="w-9 h-9 rounded-btn border border-line/70 grid place-items-center text-ink/60"
+              >
+                <HelpCircle size={14} />
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <button className="flex-1 h-10 rounded-btn border border-brand text-brand font-bold text-body">
@@ -54,20 +57,19 @@ export default function OrderCard({ order, defaultExpanded = false }) {
             </button>
           </div>
 
-          <ProductBlock product={order.product} />
+          <CourierBanner order={order} />
 
           <StatusTimeline
             currentStatusId={order.statusId}
             timeline={formatTimeline(order.timeline)}
           />
 
-          <button
-            aria-label="Collapse details"
-            onClick={() => setExpanded(false)}
-            className="mx-auto flex w-7 h-7 rounded-full border border-line/70 items-center justify-center text-ink/70"
-          >
-            <ChevronUp size={14} />
-          </button>
+          {order.statusId === 'shipped' && (
+            <ShippingSubTimeline
+              subStatusId={order.subStatusId}
+              subTimeline={order.subTimeline}
+            />
+          )}
 
           <OrderSummary order={order} />
         </div>
@@ -76,7 +78,64 @@ export default function OrderCard({ order, defaultExpanded = false }) {
   )
 }
 
-function DetailRows({ order, state }) {
+function SummaryHeader({ order, state, expanded }) {
+  const subline = statusSubline(order)
+  const { Icon, bg, fg } = statusIconFor(order)
+  return (
+    <div className="flex items-start gap-3">
+      <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${bg} ${fg}`}>
+        <Icon size={18} strokeWidth={2.25} />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-ink">{statusHeadline(order)}</p>
+        {subline && <p className="text-small text-muted mt-0.5">{subline}</p>}
+      </div>
+      {state.chip && (
+        <span
+          className={`px-2.5 py-1 rounded-btn text-small font-semibold whitespace-nowrap ${state.chip.bg} ${state.chip.fg}`}
+        >
+          {state.chip.text}
+        </span>
+      )}
+      <span
+        aria-hidden
+        className="w-7 h-7 rounded-full border border-line/70 grid place-items-center text-ink/70 shrink-0"
+      >
+        {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </span>
+    </div>
+  )
+}
+
+function ProductRow({ order }) {
+  const { product } = order
+  return (
+    <div className="pt-3 border-t border-line/60 flex items-center gap-3">
+      <img
+        src={product.image}
+        alt={product.name}
+        className="w-14 h-14 object-contain rounded-lg bg-white border border-line/40 shrink-0"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-ink truncate">{product.name}</p>
+        <p className="text-small text-muted truncate">{product.variant}</p>
+      </div>
+      <p className="font-bold text-ink whitespace-nowrap">
+        {order.currency} {order.total.toLocaleString()}
+      </p>
+    </div>
+  )
+}
+
+function OrderIdRow({ id }) {
+  return (
+    <div className="pt-3 border-t border-line/60 text-small text-muted">
+      Order ID <span className="font-bold text-ink">{id}</span>
+    </div>
+  )
+}
+
+function DetailRows({ order }) {
   return (
     <div className="space-y-2 text-body">
       <p>
@@ -86,42 +145,8 @@ function DetailRows({ order, state }) {
         <span className="font-bold">Address:</span> {order.address}
       </p>
       <p>
-        <span className="font-bold">Date &amp; Time:</span> {order.placedAt}
+        <span className="font-bold">Quantity:</span> {order.quantity}
       </p>
-      <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
-        <span>
-          <span className="font-bold">Quantity:</span> {order.quantity}
-        </span>
-        <span>
-          <span className="font-bold">Total Amount:</span> {order.currency}{' '}
-          {order.total.toLocaleString()}
-        </span>
-        {state.chip && (
-          <span
-            className={`px-3 py-1 rounded-btn text-small font-semibold ${state.chip.bg} ${state.chip.fg}`}
-          >
-            {state.chip.text}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function ProductBlock({ product }) {
-  return (
-    <div className="flex items-center gap-3 pt-3 border-t border-line/60">
-      <img
-        src={product.image}
-        alt={product.name}
-        className="w-16 h-16 object-contain rounded-lg bg-white"
-      />
-      <div className="text-body">
-        <a href="#" className="font-bold text-ink underline underline-offset-2">
-          {product.name}
-        </a>
-        <p className="text-muted">{product.variant}</p>
-      </div>
     </div>
   )
 }
