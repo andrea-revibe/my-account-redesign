@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Graphik', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgb(33, 43, 54);
+  /* light gray gutter so the mobile frame is visible on desktop preview */
+  background: #f3f4f6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+}
