@@ -1,16 +1,40 @@
-# React + Vite
+# Order Redesign
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Internal-demo prototype of the My Account → Orders area for the Revibe
+mobile site. Built to evaluate functional and visual changes (additional
+shipment statuses, collapsing delivered orders, elevated courier tracking)
+before specifying them for production.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite
+- Tailwind CSS 3
+- lucide-react for icons
+- Inter (Google Fonts) substituted for Graphik
 
-## React Compiler
+## Run it
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```sh
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # production build into dist/
+```
 
-## Expanding the ESLint configuration
+## Where things live
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `src/App.jsx` — page composition.
+- `src/components/` — UI components, one per file.
+- `src/data/orders.js` — mock orders. Swap for an API call to ship for real.
+- `src/lib/statuses.js` — single source of truth for top-level statuses, shipping sub-statuses, header chips, status-banner copy + tone, and the auto-expand rule (`pickActiveOrderId`).
+- `public/` — Revibe logo and product image (local copies, not hotlinked).
+- `brief/` — source material (screenshots and the design-system reference).
+- `docs/my-account-flow.md` — living documentation of how the orders area works (product + engineering audience).
+- `CHANGELOG.md` — change history, phase by phase.
+
+## Scope reminder
+
+Functional: the orders list, expand/collapse interactions, status communication, status filter chips, the status banner (with `delayed` and `statusMessage` overrides), the auto-expand-the-active-one rule.
+
+Decorative (visual placeholder, no logic): site-wide search, the date-range dropdown's effect on the list (plumbed but all mock orders fall inside any range), store credits, profile menu, language toggle, receipt / claim flows, the in-list "Find items" search field.
+
+See `docs/my-account-flow.md` § "Mocked vs production gap" for the full list of fakes.

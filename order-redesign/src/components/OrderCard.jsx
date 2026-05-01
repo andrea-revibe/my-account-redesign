@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronUp, ChevronDown, HelpCircle } from 'lucide-react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import {
   ORDER_STATES,
   statusHeadline,
@@ -10,6 +10,7 @@ import StatusTimeline from './StatusTimeline'
 import OrderSummary from './OrderSummary'
 import CourierBanner from './CourierBanner'
 import ShippingSubTimeline from './ShippingSubTimeline'
+import StatusBanner from './StatusBanner'
 
 // Inline-expandable order card. The header is always visible and now carries
 // status, product and price (Noon-style). The body adds the long-form details.
@@ -26,6 +27,7 @@ export default function OrderCard({ order, defaultExpanded = false }) {
         className="w-full text-left p-4 space-y-3"
       >
         <SummaryHeader order={order} state={state} expanded={expanded} />
+        <StatusBanner order={order} />
         <ProductRow order={order} />
         <OrderIdRow id={order.id} />
       </button>
@@ -34,25 +36,18 @@ export default function OrderCard({ order, defaultExpanded = false }) {
         <div className="px-4 pb-4 space-y-4 border-t border-line/60 pt-4">
           <DetailRows order={order} />
 
-          {order.statusId !== 'delivered' && order.state !== 'cancelled' && (
-            <div className="flex items-center gap-2">
-              <button className="flex-1 h-9 rounded-btn border border-line/70 text-body text-ink/70 px-3 text-left">
-                Change address
-              </button>
-              <button
-                aria-label="Address help"
-                className="w-9 h-9 rounded-btn border border-line/70 grid place-items-center text-ink/60"
-              >
-                <HelpCircle size={14} />
-              </button>
-            </div>
-          )}
-
           <div className="flex items-center gap-3">
             <button className="flex-1 h-10 rounded-btn border border-brand text-brand font-bold text-body">
               Download receipt
             </button>
-            <button className="flex-1 h-10 rounded-btn border border-line text-muted font-bold text-body">
+            <button
+              className={
+                'flex-1 h-10 rounded-btn border font-bold text-body ' +
+                (order.statusId === 'delivered'
+                  ? 'border-brand text-brand'
+                  : 'border-line text-muted')
+              }
+            >
               Raise a claim
             </button>
           </div>
@@ -81,6 +76,12 @@ export default function OrderCard({ order, defaultExpanded = false }) {
 function SummaryHeader({ order, state, expanded }) {
   const subline = statusSubline(order)
   const { Icon, bg, fg } = statusIconFor(order)
+  // Delivered orders carry state:'close' in the data, but the user-facing
+  // chip should read "Delivered" in green to match the status, not "Close".
+  const chip =
+    order.statusId === 'delivered' && order.state !== 'cancelled'
+      ? { text: 'Delivered', bg: 'bg-green-50', fg: 'text-success' }
+      : state.chip
   return (
     <div className="flex items-start gap-3">
       <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${bg} ${fg}`}>
@@ -90,11 +91,11 @@ function SummaryHeader({ order, state, expanded }) {
         <p className="font-bold text-ink">{statusHeadline(order)}</p>
         {subline && <p className="text-small text-muted mt-0.5">{subline}</p>}
       </div>
-      {state.chip && (
+      {chip && (
         <span
-          className={`px-2.5 py-1 rounded-btn text-small font-semibold whitespace-nowrap ${state.chip.bg} ${state.chip.fg}`}
+          className={`px-2.5 py-1 rounded-btn text-small font-semibold whitespace-nowrap ${chip.bg} ${chip.fg}`}
         >
-          {state.chip.text}
+          {chip.text}
         </span>
       )}
       <span

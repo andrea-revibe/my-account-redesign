@@ -25,9 +25,11 @@
 - Card / container background: `#FFFFFF`
 - Primary text: `rgb(33, 43, 54)`
 - Secondary text: `rgb(167, 169, 171)`
-- Brand primary (CTA background): `transparent` (the main CTA in the app
-  is an outlined button, not filled)
-- Brand primary text: `rgb(80, 25, 160)`
+- Brand primary (CTA background): `transparent` for most actions in the
+  source app (outlined buttons). Phase 2 introduces one filled brand
+  button on the `CourierBanner` "Track order" CTA — deliberate
+  deviation, see Notes.
+- Brand primary text / fill: `rgb(80, 25, 160)`
 - Success / delivered green: `rgb(0, 182, 122)`
 - In-progress / shipped: `rgb(255, 153, 31)` // noted: not present in the
   source dump; chosen to match the orange chip on the "Close" pill so the
@@ -95,12 +97,21 @@ delivery time-window pickers.
 ## Notes / oddities
 
 - The order card uses inline expand/collapse rather than a navigation
-  push — the chevron on the header toggles the body, and there's a second
-  chevron mid-card that acts as a quick-collapse handle. The prototype
-  preserves both.
-- The status timeline in the source app shows all four steps with the
-  same gray treatment even after the order is marked Cancelled. The
-  prototype gives "current" a brand-purple fill and "reached" a darker
-  gray fill to make phase-2 status work easier to read.
+  push. The whole collapsed-card header is the tap target; the chevron is
+  decorative.
+- The collapsed card carries a Noon-style summary header — status icon
+  + headline + state chip + product image with price + order ID — so
+  customers can scan the list without expanding anything.
+- The horizontal status timeline fills reached steps with brand purple
+  (circles + 2px connectors). The current step's label is bold; future
+  steps are outlined and gray. This is a deliberate departure from the
+  source app, where all four circles look uniform.
+- A vertical shipping sub-timeline appears under the horizontal timeline
+  only while `statusId === 'shipped'`. It carries four DHL sub-statuses:
+  arrived in destination country, cleared customs, forwarded to
+  third-party agent, out for delivery.
+- `CourierBanner` is the only filled brand-purple CTA in the app — used
+  on the "Track order" button to make the action stand out, since
+  elevating tracking visibility was a phase-2 goal.
 - The chat FAB is anchored to the mobile frame (not the viewport), so on
   desktop preview it sits inside the 430px-wide column.

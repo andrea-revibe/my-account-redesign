@@ -33,6 +33,7 @@ export const ORDERS = [
     currency: 'AED',
     statusId: 'quality_check',
     state: 'open',
+    delayed: true,
     courier: null,
     trackingNumber: null,
     customerName: 'Andrea Grossi',
