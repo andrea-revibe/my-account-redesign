@@ -2,6 +2,37 @@
 
 Internal demo project. Format roughly follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — phase 4 (My Account redesign handoff)
+
+### Added
+
+- **`HeroCard`** — full-bleed gradient (purple → magenta) hero pulled to the top of the orders list for the single most-in-flight order. Live "Active order · #id" eyebrow with a pulsing green dot, status headline, frosted product strip, light-on-dark dot timeline, and a primary "Track package" / ghost "Help" CTA pair.
+- **Detailed-tracking expand inside `HeroCard`.** Visible only while `statusId === 'shipped'`. Renders a DHL courier strip (badge, courier name, tracking number, copy-to-clipboard) and the vertical sub-timeline restyled for the dark gradient.
+- **`PastOrderCard`** — compact one-row card for delivered + cancelled orders, with a status pill, placement date, order id, total, and a single contextual action (`Download receipt` for delivered, `Raise a claim` for cancelled).
+- **`GreetRow`** — "My orders" page title + count line + tight gradient credits pill, replacing the old full-width `StoreCreditsCard`.
+- **Section labels** — `In progress` / `Other open orders` / `Past orders` headings with item counts, so delivered/cancelled history sits below the live list instead of mixed in.
+- **Chip count badges** — each status chip in `OrderFilters` now carries a small numeric badge (computed from the date-range-filtered set).
+- **"Delivery by [date]" eta block** in the collapsed `OrderCard` header for `created` and `quality_check` orders. Large headline + a muted sentence (colored "On track" / "Taking longer than expected" lead phrase + body), placed above the dot timeline.
+- **Order details collapse** inside expanded `OrderCard` — `<details>` block with delivery address, phone number, and order date. While `statusId === 'created'`, the card also exposes subtle pill buttons for `Change address` and `Change phone number`.
+- **`placedAtFull`** field on every mock order — long-form date used inside the Order details collapse.
+- **`STATUSES[].short`** — short labels (`Placed / QC / Shipped / Delivered`) used by the compact dot timelines.
+
+### Changed
+
+- **Top chrome condensed.** The four-row stack (`PromoBar + Header + SearchBar + FiltersRow`) collapses into a single sticky `Header` (menu / logo / search / bell / avatar) plus the new `GreetRow` and a search-inline `OrderFilters` row.
+- **`OrderCard` rebuilt.** Collapsed view: status badge + headline + chevron → eta block (in-progress only) → dot timeline → product strip with price. Expanded body: status banner → shipping sub-timeline (when shipped) → courier card → Order details collapse → Cancel/Receipt + Get help action row → full timeline.
+- **Header action buttons.** Old "Download receipt / Raise a claim" pair replaced with state-aware actions: `Cancel order` (red ghost) for in-progress orders, `Receipt` for past orders, paired with a primary `Get help`.
+- **"In progress" chip** renamed to **"Open"** to match the chip label set used in the design.
+- **Page background** is now the warm off-white `canvas` token (`#f7f5fb`) so cards feel elevated without shadows.
+- **Brand palette extended.** Added nested tokens: `brand-bg`, `brand-bg2`, `success-bg`, `warn`, `warn-bg`, `danger`, `danger-bg`, `line-2`, `ink-2`. Plus `bg-hero-gradient` / `bg-credits-pill` background-image utilities and `slideDown` / `heroPulse` keyframe animations.
+- **Card radius** bumped from 16px to 18px; button radius from 8px to 10px to match the prototype.
+- **Status headline copy.** `STATUSES.created` is now `Order placed` and `STATUSES.quality_check` is now `Quality check` (was `Order created` / `At quality check`), matching the design.
+
+### Removed
+
+- **`PromoBar`, `SearchBar`, `FiltersRow`, `StoreCreditsCard`, `StatusBanner`, `OrderSummary`, `CourierBanner`** components — superseded by the new `Header` / `GreetRow` / `OrderFilters` / `HeroCard` / `OrderCard` / `PastOrderCard` set. Their behaviors are folded into the new components.
+- **`fontSize.page` token** (only ever used by `text-page` on the old "Orders" heading; no longer needed).
+
 ## [Unreleased] — phase 3
 
 ### Added

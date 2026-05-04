@@ -1,10 +1,11 @@
 // Top-level fulfilment progression. Always 4 steps in the horizontal
-// timeline regardless of how shipping decomposes underneath.
+// timeline regardless of how shipping decomposes underneath. `short` is the
+// label used under the compact dot timelines on collapsed cards and the hero.
 export const STATUSES = [
-  { id: 'created', label: 'Order created' },
-  { id: 'quality_check', label: 'At quality check' },
-  { id: 'shipped', label: 'Shipped' },
-  { id: 'delivered', label: 'Delivered' },
+  { id: 'created', label: 'Order placed', short: 'Placed' },
+  { id: 'quality_check', label: 'Quality check', short: 'QC' },
+  { id: 'shipped', label: 'Shipped', short: 'Shipped' },
+  { id: 'delivered', label: 'Delivered', short: 'Delivered' },
 ]
 
 // Sub-statuses that apply only while the order is in the `shipped` stage.
@@ -192,7 +193,6 @@ export function statusHeadline(order) {
     if (sub) return sub.label
     return 'Shipped'
   }
-  if (order.statusId === 'created') return 'Order placed'
   const top = STATUSES.find((s) => s.id === order.statusId)
   return top ? top.label : 'Order'
 }

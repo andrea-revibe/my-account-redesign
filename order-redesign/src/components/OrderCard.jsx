@@ -1,165 +1,385 @@
-import { useState } from 'react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import {
-  ORDER_STATES,
+  ChevronDown,
+  Check,
+  Edit2,
+  Phone,
+  X,
+  Download,
+  MessageSquareText,
+  ExternalLink,
+} from 'lucide-react'
+import {
+  STATUSES,
+  progressIndex,
   statusHeadline,
   statusSubline,
+  statusDescription,
   statusIconFor,
 } from '../lib/statuses'
 import StatusTimeline from './StatusTimeline'
-import OrderSummary from './OrderSummary'
-import CourierBanner from './CourierBanner'
 import ShippingSubTimeline from './ShippingSubTimeline'
-import StatusBanner from './StatusBanner'
 
-// Inline-expandable order card. The header is always visible and now carries
-// status, product and price (Noon-style). The body adds the long-form details.
+// Hardcoded so the demo lands on a real DHL test shipment regardless of the
+// placeholder tracking numbers in the mock data.
+const DHL_TRACKING_URL =
+  'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=3392654392'
+
+// Inline-expandable order card. Collapsed view leads with status, an ETA
+// block (for created / quality_check states), the dot timeline, and a
+// product strip. Expanding reveals the long-form banner, sub-timeline,
+// courier card, Order details collapse, and the action row.
 export default function OrderCard({ order, defaultExpanded = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
-  const state = ORDER_STATES[order.state] ?? ORDER_STATES.open
+  useEffect(() => {
+    setExpanded(defaultExpanded)
+  }, [defaultExpanded])
+
+  const isInProgress =
+    (order.statusId === 'created' || order.statusId === 'quality_check') &&
+    order.state !== 'cancelled'
+  const showEta = isInProgress
+  const showTimeline = order.state !== 'cancelled'
+  const desc = statusDescription(order)
+  const isShipped = order.statusId === 'shipped'
+  const showCancel = isInProgress
 
   return (
-    <article className="bg-surface rounded-card border border-line/60 overflow-hidden">
+    <article
+      data-expanded={expanded}
+      className="bg-surface rounded-card border border-line overflow-hidden"
+    >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="w-full text-left p-4 space-y-3"
+        className="w-full text-left flex flex-col gap-3 px-4 py-3.5"
       >
-        <SummaryHeader order={order} state={state} expanded={expanded} />
-        <StatusBanner order={order} />
-        <ProductRow order={order} />
-        <OrderIdRow id={order.id} />
+        <SummaryHeader order={order} expanded={expanded} />
+
+        {showEta && (
+          <div className="px-0.5 pt-1 pb-1.5">
+            <div className="text-[17px] font-bold text-ink leading-[1.2] tracking-[-0.01em]">
+              Delivery by {order.estimatedDelivery || 'May 4'}
+            </div>
+            <div className="mt-1 text-[12px] leading-[1.45] text-muted">
+              <ToneLead tone={desc.tone}>{desc.lead}.</ToneLead>{' '}
+              <span>{desc.body}</span>
+            </div>
+          </div>
+        )}
+
+        {showTimeline && <DotBar order={order} />}
+
+        <div className="flex items-center gap-3 pt-3 border-t border-dashed border-line">
+          <div className="w-11 h-14 rounded-[10px] bg-brand-bg border border-line-2 grid place-items-center p-1 shrink-0">
+            <img
+              src={order.product.image}
+              alt={order.product.name}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14px] font-semibold text-ink truncate">
+              {order.product.name}
+            </div>
+            <div className="text-[12px] text-muted mt-0.5 truncate">
+              {order.product.variant} · #{order.id}
+            </div>
+          </div>
+          <div className="text-[14.5px] font-bold text-ink whitespace-nowrap">
+            {order.currency} {order.total.toLocaleString()}
+          </div>
+        </div>
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 space-y-4 border-t border-line/60 pt-4">
-          <DetailRows order={order} />
+        <div className="px-4 py-4 flex flex-col gap-3.5 border-t border-line bg-canvas animate-slideDown">
+          {!showEta && <StatusBannerInline desc={desc} />}
 
-          <div className="flex items-center gap-3">
-            <button className="flex-1 h-10 rounded-btn border border-brand text-brand font-bold text-body">
-              Download receipt
-            </button>
-            <button
-              className={
-                'flex-1 h-10 rounded-btn border font-bold text-body ' +
-                (order.statusId === 'delivered'
-                  ? 'border-brand text-brand'
-                  : 'border-line text-muted')
-              }
-            >
-              Raise a claim
-            </button>
-          </div>
-
-          <CourierBanner order={order} />
-
-          <StatusTimeline
-            currentStatusId={order.statusId}
-            timeline={formatTimeline(order.timeline)}
-          />
-
-          {order.statusId === 'shipped' && (
-            <ShippingSubTimeline
-              subStatusId={order.subStatusId}
-              subTimeline={order.subTimeline}
-            />
+          {isShipped && (
+            <div className="rounded-[14px] border border-line bg-surface p-3.5">
+              <h4 className="m-0 mb-2.5 text-[11.5px] font-bold uppercase tracking-[0.06em] text-muted">
+                Shipping progress
+              </h4>
+              <ShippingSubTimeline
+                subStatusId={order.subStatusId}
+                subTimeline={order.subTimeline}
+              />
+            </div>
           )}
 
-          <OrderSummary order={order} />
+          {order.courier && (
+            <div className="flex items-center gap-2.5 p-3 rounded-[12px] border border-line bg-surface">
+              <span className="w-8 h-8 rounded-lg grid place-items-center text-[11px] font-extrabold tracking-[0.04em] bg-[#fff5d4] text-[#8a5a00] shrink-0">
+                DHL
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-ink truncate">
+                  Tracked by {order.courier}
+                </div>
+                {order.trackingNumber && (
+                  <div className="text-[11.5px] text-muted mt-px tabular-nums truncate">
+                    Tracking #{order.trackingNumber}
+                  </div>
+                )}
+              </div>
+              <a
+                href={DHL_TRACKING_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[12px] font-semibold text-brand inline-flex items-center gap-1"
+              >
+                Track <ExternalLink size={12} strokeWidth={1.75} />
+              </a>
+            </div>
+          )}
+
+          <DetailsCollapse order={order} canEdit={isInProgress && order.statusId === 'created'} />
+
+          <div className="flex gap-2">
+            {showCancel ? (
+              <SecondaryBtn tone="danger" icon={X} label="Cancel order" />
+            ) : (
+              <SecondaryBtn icon={Download} label="Receipt" />
+            )}
+            <PrimaryBtn icon={MessageSquareText} label="Get help" />
+          </div>
+
+          {/* Full timeline + courier-help — kept for parity with prior info,
+              tucked at the very end so the card opens with the most useful
+              actions on top. */}
+          <div className="rounded-[14px] border border-line bg-surface p-3.5">
+            <h4 className="m-0 mb-3 text-[11.5px] font-bold uppercase tracking-[0.06em] text-muted">
+              Full timeline
+            </h4>
+            <StatusTimeline
+              currentStatusId={order.statusId}
+              timeline={formatTimeline(order.timeline)}
+            />
+          </div>
         </div>
       )}
     </article>
   )
 }
 
-function SummaryHeader({ order, state, expanded }) {
-  const subline = statusSubline(order)
+function SummaryHeader({ order, expanded }) {
   const { Icon, bg, fg } = statusIconFor(order)
-  // Delivered orders carry state:'close' in the data, but the user-facing
-  // chip should read "Delivered" in green to match the status, not "Close".
-  const chip =
-    order.statusId === 'delivered' && order.state !== 'cancelled'
-      ? { text: 'Delivered', bg: 'bg-green-50', fg: 'text-success' }
-      : state.chip
+  const sub = statusSubline(order)
   return (
     <div className="flex items-start gap-3">
-      <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${bg} ${fg}`}>
-        <Icon size={18} strokeWidth={2.25} />
+      <span
+        className={`w-[38px] h-[38px] rounded-[12px] grid place-items-center shrink-0 ${bg} ${fg}`}
+      >
+        <Icon size={18} strokeWidth={1.75} />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-ink">{statusHeadline(order)}</p>
-        {subline && <p className="text-small text-muted mt-0.5">{subline}</p>}
+        <div className="text-[15px] font-bold text-ink tracking-[-0.005em]">
+          {statusHeadline(order)}
+        </div>
+        {sub && (
+          <div className="text-[12.5px] text-muted mt-0.5 truncate">{sub}</div>
+        )}
       </div>
-      {chip && (
-        <span
-          className={`px-2.5 py-1 rounded-btn text-small font-semibold whitespace-nowrap ${chip.bg} ${chip.fg}`}
-        >
-          {chip.text}
-        </span>
-      )}
       <span
         aria-hidden
-        className="w-7 h-7 rounded-full border border-line/70 grid place-items-center text-ink/70 shrink-0"
+        className={`w-7 h-7 rounded-full bg-line-2 text-ink-2 grid place-items-center shrink-0 transition-transform duration-200 ${
+          expanded ? 'rotate-180' : ''
+        }`}
       >
-        {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        <ChevronDown size={14} strokeWidth={1.75} />
       </span>
     </div>
   )
 }
 
-function ProductRow({ order }) {
-  const { product } = order
+// Compact dot timeline used inside the collapsed card header. Mirrors the
+// hero-card variant but in the light palette — see HeroCard's DotTimeline
+// for the dark counterpart.
+function DotBar({ order }) {
+  const cur = progressIndex(order.statusId)
+  const cancelled = order.state === 'cancelled'
+  const delivered = order.statusId === 'delivered'
   return (
-    <div className="pt-3 border-t border-line/60 flex items-center gap-3">
-      <img
-        src={product.image}
-        alt={product.name}
-        className="w-14 h-14 object-contain rounded-lg bg-white border border-line/40 shrink-0"
-      />
-      <div className="flex-1 min-w-0">
-        <p className="font-bold text-ink truncate">{product.name}</p>
-        <p className="text-small text-muted truncate">{product.variant}</p>
+    <div className="flex items-start justify-between gap-1 mt-1">
+      {STATUSES.map((s, i) => {
+        const done = i < cur
+        const current = i === cur
+        const reached = done || current
+        const tone = cancelled ? 'danger' : delivered ? 'success' : 'brand'
+        return (
+          <div
+            key={s.id}
+            className="flex-1 flex flex-col items-center relative"
+          >
+            {i > 0 && (
+              <span
+                aria-hidden
+                className={`absolute top-[9px] right-1/2 w-full h-[2px] ${
+                  reached
+                    ? tone === 'danger'
+                      ? 'bg-danger'
+                      : tone === 'success'
+                        ? 'bg-success'
+                        : 'bg-brand'
+                    : 'bg-line'
+                }`}
+              />
+            )}
+            <span
+              className={`relative z-10 grid place-items-center w-[18px] h-[18px] rounded-full border-2 ${
+                reached
+                  ? tone === 'danger'
+                    ? 'bg-danger border-danger text-white'
+                    : tone === 'success'
+                      ? 'bg-success border-success text-white'
+                      : 'bg-brand border-brand text-white'
+                  : 'bg-surface border-line text-muted'
+              } ${current ? 'shadow-[0_0_0_4px_rgb(243,237,251)]' : ''}`}
+            >
+              {done && <Check size={10} strokeWidth={3} />}
+            </span>
+            <span
+              className={`mt-1.5 text-[10.5px] text-center leading-[1.2] font-medium ${
+                current
+                  ? 'text-ink font-bold'
+                  : reached
+                    ? 'text-ink'
+                    : 'text-muted'
+              }`}
+            >
+              {s.short}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function ToneLead({ tone, children }) {
+  const cls =
+    tone === 'warn'
+      ? 'text-warn'
+      : tone === 'success'
+        ? 'text-success'
+        : tone === 'danger'
+          ? 'text-danger'
+          : 'text-brand'
+  return <span className={`font-semibold ${cls}`}>{children}</span>
+}
+
+function StatusBannerInline({ desc }) {
+  const tones = {
+    brand: 'bg-brand-bg border-brand-bg2 text-ink',
+    success: 'bg-success-bg border-[#c6ebd9] text-ink',
+    warn: 'bg-warn-bg border-[#ffe3b8] text-ink',
+    danger: 'bg-danger-bg border-[#f8c8cf] text-ink',
+  }
+  const lead = {
+    brand: 'text-brand',
+    success: 'text-success',
+    warn: 'text-warn',
+    danger: 'text-danger',
+  }
+  return (
+    <div
+      className={`rounded-[12px] border px-3.5 py-3 text-[13px] leading-[1.45] ${tones[desc.tone] || tones.brand}`}
+    >
+      <span className={`font-bold ${lead[desc.tone] || lead.brand}`}>
+        {desc.lead}
+      </span>{' '}
+      <span>{desc.body}</span>
+    </div>
+  )
+}
+
+function DetailsCollapse({ order, canEdit }) {
+  return (
+    <details className="group rounded-[12px] border border-line bg-surface overflow-hidden">
+      <summary className="flex items-center justify-between px-3.5 py-3 text-[13px] font-semibold text-ink cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <span>Order details</span>
+        <ChevronDown
+          size={16}
+          strokeWidth={1.75}
+          className="text-muted transition-transform group-open:rotate-180"
+        />
+      </summary>
+      <div className="px-3.5 pb-3 pt-3 flex flex-col gap-3.5 border-t border-line-2">
+        <DetailStack
+          k="Delivery address"
+          v={order.address}
+          action={canEdit ? { icon: Edit2, label: 'Change address' } : null}
+        />
+        <DetailStack
+          k="Phone number"
+          v={order.phone}
+          action={
+            canEdit ? { icon: Phone, label: 'Change phone number' } : null
+          }
+        />
+        <DetailRow k="Order date" v={order.placedAtFull || order.placedAt} />
       </div>
-      <p className="font-bold text-ink whitespace-nowrap">
-        {order.currency} {order.total.toLocaleString()}
-      </p>
-    </div>
+    </details>
   )
 }
 
-function OrderIdRow({ id }) {
+function DetailStack({ k, v, action }) {
   return (
-    <div className="pt-3 border-t border-line/60 text-small text-muted">
-      Order ID <span className="font-bold text-ink">{id}</span>
+    <div className="flex flex-col gap-2 items-end">
+      <DetailRow k={k} v={v} />
+      {action && (
+        <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-line bg-surface text-[11.5px] font-medium text-ink hover:bg-line-2">
+          <action.icon size={12} strokeWidth={1.75} className="opacity-70" />
+          {action.label}
+        </button>
+      )}
     </div>
   )
 }
 
-function DetailRows({ order }) {
+function DetailRow({ k, v }) {
   return (
-    <div className="space-y-2 text-body">
-      <p>
-        <span className="font-bold">Phone number:</span> {order.phone}
-      </p>
-      <p>
-        <span className="font-bold">Address:</span> {order.address}
-      </p>
-      <p>
-        <span className="font-bold">Quantity:</span> {order.quantity}
-      </p>
+    <div className="flex justify-between gap-3 w-full">
+      <div className="text-[12px] text-muted">{k}</div>
+      <div className="text-[12.5px] text-ink text-right max-w-[60%] leading-[1.4]">
+        {v}
+      </div>
     </div>
   )
 }
 
-// Map raw timestamp string into the two-line "9 Apr 2026\n7:09 PM" form
-// used in the screenshots, so the timeline labels stack neatly under each step.
+function PrimaryBtn({ icon: Icon, label }) {
+  return (
+    <button className="flex-1 h-[42px] rounded-[10px] inline-flex items-center justify-center gap-1.5 bg-brand text-white border border-brand font-semibold text-[13.5px]">
+      <Icon size={16} strokeWidth={1.75} />
+      {label}
+    </button>
+  )
+}
+
+function SecondaryBtn({ icon: Icon, label, tone }) {
+  const danger =
+    tone === 'danger'
+      ? 'text-danger border-[#f4c5cc] hover:bg-danger-bg'
+      : 'text-ink border-line hover:bg-line-2'
+  return (
+    <button
+      className={`flex-1 h-[42px] rounded-[10px] inline-flex items-center justify-center gap-1.5 bg-surface border font-semibold text-[13.5px] ${danger}`}
+    >
+      <Icon size={16} strokeWidth={1.75} />
+      {label}
+    </button>
+  )
+}
+
 function formatTimeline(timeline) {
   const out = {}
   for (const [k, v] of Object.entries(timeline)) {
     const parts = String(v).split(' ')
-    if (parts.length >= 5) {
-      out[k] = `${parts.slice(0, 3).join(' ')}\n${parts.slice(3).join(' ')}`
+    if (parts.length >= 4) {
+      out[k] = `${parts.slice(0, 2).join(' ')}\n${parts.slice(2).join(' ')}`
     } else {
       out[k] = v
     }
