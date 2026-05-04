@@ -38,13 +38,12 @@ export default function PastOrderCard({ order }) {
           {order.currency} {order.total.toLocaleString()}
         </div>
       </div>
-      <div className="flex justify-end mt-2.5 pt-2.5 border-t border-line-2">
-        {isCancelled ? (
-          <PastButton icon={AlertTriangle} label="Raise a claim" />
-        ) : (
+      {!isCancelled && (
+        <div className="flex justify-end gap-2 mt-2.5 pt-2.5 border-t border-line-2">
           <PastButton icon={Download} label="Download receipt" />
-        )}
-      </div>
+          <PastButton icon={AlertTriangle} label="Raise a claim" />
+        </div>
+      )}
     </article>
   )
 }

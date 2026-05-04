@@ -2,6 +2,21 @@
 
 Internal demo project. Format roughly follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — phase 5 (post-handoff iteration)
+
+### Added
+
+- **Hero card secondary action row.** Beneath the primary `Track package` + `Help` CTAs, the hero now carries two ghost pill actions (transparent bg, soft white-70 text on the gradient): `Cancel order` flush-left, `Raise a claim` flush-right. Tapping `Cancel order` toggles a small dark tooltip — *"You cannot cancel the order at this stage"* — that dismisses on outside-click. Cancellation eligibility logic is prototype-only.
+- **Past-delivered "Raise a claim" pill.** Delivered `PastOrderCard` now renders both `Download receipt` **and** `Raise a claim`, right-aligned with a small gap.
+
+### Changed
+
+- **In-progress timeline dedup.** For `created` and `quality_check` orders, the in-card dot timeline (`DotBar`) no longer renders above the product strip — the same progression was being shown twice. The four-step Full timeline now sits **above** Order details / Cancel / Get help inside the expanded view. Shipped orders are unchanged: in-card dot timeline + Full timeline at the bottom.
+
+### Removed
+
+- **"Raise a claim" on cancelled past orders.** Cancelled `PastOrderCard` no longer renders an action area at all (no border-top, no button row).
+
 ## [Unreleased] — phase 4 (My Account redesign handoff)
 
 ### Added
