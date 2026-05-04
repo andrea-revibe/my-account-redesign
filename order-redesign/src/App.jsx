@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
-import PromoBar from './components/PromoBar'
 import Header from './components/Header'
-import SearchBar from './components/SearchBar'
-import FiltersRow from './components/FiltersRow'
-import StoreCreditsCard from './components/StoreCreditsCard'
+import GreetRow from './components/GreetRow'
 import OrderFilters from './components/OrderFilters'
+import HeroCard from './components/HeroCard'
 import OrderCard from './components/OrderCard'
+import PastOrderCard from './components/PastOrderCard'
 import ChatFab from './components/ChatFab'
 import { ORDERS } from './data/orders'
 import { pickActiveOrderId } from './lib/statuses'
@@ -43,54 +42,120 @@ export default function App() {
   const [activeStatus, setActiveStatus] = useState('all')
   const [activeRange, setActiveRange] = useState('3m')
 
-  const filtered = useMemo(() => {
+  // Counts are computed off the date-range-filtered set so the chip badges
+  // stay accurate when the user widens / narrows the date window.
+  const dateFiltered = useMemo(() => {
     const now = Date.now()
-    return ORDERS.filter(
-      (o) => matchesStatus(o, activeStatus) && matchesRange(o, activeRange, now),
-    )
-  }, [activeStatus, activeRange])
+    return ORDERS.filter((o) => matchesRange(o, activeRange, now))
+  }, [activeRange])
+
+  const counts = useMemo(
+    () => ({
+      all: dateFiltered.length,
+      in_progress: dateFiltered.filter(
+        (o) => o.state !== 'cancelled' && o.statusId !== 'delivered',
+      ).length,
+      delivered: dateFiltered.filter(
+        (o) => o.statusId === 'delivered' && o.state !== 'cancelled',
+      ).length,
+      cancelled: dateFiltered.filter((o) => o.state === 'cancelled').length,
+    }),
+    [dateFiltered],
+  )
+
+  const filtered = useMemo(
+    () => dateFiltered.filter((o) => matchesStatus(o, activeStatus)),
+    [dateFiltered, activeStatus],
+  )
 
   const activeId = useMemo(() => pickActiveOrderId(filtered), [filtered])
+  const activeOrder = filtered.find((o) => o.id === activeId)
+
+  // Hero hides on cancelled/delivered tabs since the active order is by
+  // definition in-flight.
+  const showHero =
+    activeOrder &&
+    activeStatus !== 'cancelled' &&
+    activeStatus !== 'delivered'
+
+  const inFlight = filtered.filter(
+    (o) =>
+      o.state !== 'cancelled' &&
+      o.statusId !== 'delivered' &&
+      (!showHero || o.id !== activeId),
+  )
+  const past = filtered.filter(
+    (o) => o.statusId === 'delivered' || o.state === 'cancelled',
+  )
 
   return (
     <div className="min-h-full flex justify-center">
-      <div className="w-full max-w-mobile bg-white shadow-sm relative pb-24">
-        <PromoBar />
+      <div className="w-full max-w-mobile bg-canvas shadow-sm relative pb-24">
         <Header />
-        <SearchBar />
-        <FiltersRow />
+        <GreetRow
+          totalOrders={counts.all}
+          activeOrders={counts.in_progress}
+        />
+        <OrderFilters
+          activeStatus={activeStatus}
+          onStatusChange={setActiveStatus}
+          activeRange={activeRange}
+          onRangeChange={setActiveRange}
+          counts={counts}
+        />
 
-        <main className="px-4 py-4 space-y-4">
-          <StoreCreditsCard />
+        {showHero && <HeroCard order={activeOrder} />}
 
-          <h1 className="text-page font-bold text-ink">Orders</h1>
-
-          <OrderFilters
-            activeStatus={activeStatus}
-            onStatusChange={setActiveStatus}
-            activeRange={activeRange}
-            onRangeChange={setActiveRange}
-          />
-
-          <div className="space-y-3">
-            {filtered.length === 0 ? (
-              <p className="text-small text-muted text-center py-8">
-                No orders match the selected filters.
-              </p>
-            ) : (
-              filtered.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  defaultExpanded={order.id === activeId}
+        {filtered.length === 0 ? (
+          <p className="px-4 py-10 text-small text-muted text-center">
+            No orders match the selected filters.
+          </p>
+        ) : (
+          <>
+            {inFlight.length > 0 && (
+              <>
+                <SectionLabel
+                  title={showHero ? 'Other open orders' : 'In progress'}
+                  count={inFlight.length}
                 />
-              ))
+                <div className="px-4 flex flex-col gap-3">
+                  {inFlight.map((o) => (
+                    <OrderCard
+                      key={o.id}
+                      order={o}
+                      defaultExpanded={!showHero && o.id === activeId}
+                    />
+                  ))}
+                </div>
+              </>
             )}
-          </div>
-        </main>
+
+            {past.length > 0 && (
+              <>
+                <SectionLabel title="Past orders" count={past.length} />
+                <div className="px-4 flex flex-col gap-3">
+                  {past.map((o) => (
+                    <PastOrderCard key={o.id} order={o} />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
 
         <ChatFab />
       </div>
+    </div>
+  )
+}
+
+function SectionLabel({ title, count }) {
+  return (
+    <div className="flex items-baseline justify-between px-4 pt-3 pb-2">
+      <h3 className="m-0 text-[12px] font-bold uppercase tracking-[0.08em] text-muted">
+        {title}
+      </h3>
+      <span className="text-[12px] font-medium text-muted">{count}</span>
     </div>
   )
 }

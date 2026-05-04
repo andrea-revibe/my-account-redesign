@@ -13,8 +13,8 @@ body {
   font-family: 'Inter', 'Graphik', system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 20px;
-  color: rgb(33, 43, 54);
-  /* light gray gutter so the mobile frame is visible on desktop preview */
+  color: rgb(28, 34, 48);
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
   background: #f3f4f6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
