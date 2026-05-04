@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Truck,
   MessageSquareText,
   ChevronDown,
   Check,
   Copy,
+  X,
+  AlertTriangle,
 } from 'lucide-react'
 import {
   STATUSES,
@@ -131,8 +133,63 @@ export default function HeroCard({ order }) {
             <MessageSquareText size={16} strokeWidth={1.75} /> Help
           </button>
         </div>
+
+        <div className="mt-2 flex justify-between items-center -mx-1">
+          <CancelOrderPill />
+          <HeroPill icon={AlertTriangle} label="Raise a claim" />
+        </div>
       </div>
     </section>
+  )
+}
+
+function HeroPill({ icon: Icon, label, ...rest }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1.5 px-1 py-1 rounded-full bg-transparent text-[12px] font-medium text-white/70 hover:text-white"
+      {...rest}
+    >
+      <Icon size={13} strokeWidth={1.75} className="opacity-80" />
+      {label}
+    </button>
+  )
+}
+
+function CancelOrderPill() {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDown(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative">
+      {open && (
+        <div
+          role="status"
+          className="absolute bottom-full left-0 mb-2 w-max max-w-[240px] rounded-[10px] bg-ink text-white text-[11.5px] leading-[1.35] px-3 py-2 shadow-lg2 animate-slideDown"
+        >
+          You cannot cancel the order at this stage
+          <span
+            aria-hidden
+            className="absolute top-full left-5 -mt-1 w-2 h-2 rotate-45 bg-ink"
+          />
+        </div>
+      )}
+      <HeroPill
+        icon={X}
+        label="Cancel order"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      />
+    </div>
   )
 }
 

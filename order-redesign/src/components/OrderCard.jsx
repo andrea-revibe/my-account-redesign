@@ -39,10 +39,25 @@ export default function OrderCard({ order, defaultExpanded = false }) {
     (order.statusId === 'created' || order.statusId === 'quality_check') &&
     order.state !== 'cancelled'
   const showEta = isInProgress
-  const showTimeline = order.state !== 'cancelled'
+  // Main-card dot timeline only renders for shipped orders. For created /
+  // quality_check it lives inside the expanded view (above Order details)
+  // so the same progression isn't shown twice.
+  const showTimeline = order.state !== 'cancelled' && !isInProgress
   const desc = statusDescription(order)
   const isShipped = order.statusId === 'shipped'
   const showCancel = isInProgress
+
+  const fullTimeline = (
+    <div className="rounded-[14px] border border-line bg-surface p-3.5">
+      <h4 className="m-0 mb-3 text-[11.5px] font-bold uppercase tracking-[0.06em] text-muted">
+        Full timeline
+      </h4>
+      <StatusTimeline
+        currentStatusId={order.statusId}
+        timeline={formatTimeline(order.timeline)}
+      />
+    </div>
+  )
 
   return (
     <article
@@ -135,6 +150,8 @@ export default function OrderCard({ order, defaultExpanded = false }) {
             </div>
           )}
 
+          {isInProgress && fullTimeline}
+
           <DetailsCollapse order={order} canEdit={isInProgress && order.statusId === 'created'} />
 
           <div className="flex gap-2">
@@ -146,18 +163,7 @@ export default function OrderCard({ order, defaultExpanded = false }) {
             <PrimaryBtn icon={MessageSquareText} label="Get help" />
           </div>
 
-          {/* Full timeline + courier-help — kept for parity with prior info,
-              tucked at the very end so the card opens with the most useful
-              actions on top. */}
-          <div className="rounded-[14px] border border-line bg-surface p-3.5">
-            <h4 className="m-0 mb-3 text-[11.5px] font-bold uppercase tracking-[0.06em] text-muted">
-              Full timeline
-            </h4>
-            <StatusTimeline
-              currentStatusId={order.statusId}
-              timeline={formatTimeline(order.timeline)}
-            />
-          </div>
+          {!isInProgress && fullTimeline}
         </div>
       )}
     </article>

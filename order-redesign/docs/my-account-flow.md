@@ -65,12 +65,23 @@ When a card is **collapsed**, the customer sees:
 When a card is **expanded**, everything above remains visible at the top, and
 below it the customer sees:
 
-- Phone, address, and quantity.
-- "Download receipt" and "Raise a claim" (always available; "Raise a claim" turns outlined-purple on delivered orders to match "Download receipt", muted gray otherwise).
-- The courier banner (only while the order is shipped or delivered) with its primary "Track order" CTA and a soft "Need help with delivery?" secondary CTA.
-- The four-step horizontal status timeline.
-- The vertical shipping sub-timeline (only while the order is shipped).
-- The order summary table.
+- For created / quality_check orders, the four-step **Full timeline** comes first — there is no in-card dot timeline above the product strip for these states, so the expanded timeline is the only one shown. For shipped orders the in-card dot timeline stays and the Full timeline sits at the very bottom of the expanded view (kept for parity).
+- The status banner (long form), the **Shipping progress** sub-timeline (shipped only), and the courier card with the "Track" link.
+- The **Order details** collapse with phone, address, order date, and "Change address" / "Change phone number" actions while the order is still in `created`.
+- The action row: `Cancel order` (in-progress orders) or `Receipt` (shipped) + `Get help`.
+
+Past-order cards (delivered, cancelled) are a separate, simpler component
+(`PastOrderCard`):
+
+- **Delivered** carries two pill actions, right-aligned: `Download receipt` + `Raise a claim`.
+- **Cancelled** carries no action row — the bottom border + button are removed entirely.
+
+The **hero card** (active in-flight order, currently the out-for-delivery
+order) carries an extra row of two pill actions beneath its primary
+`Track package` + `Help` CTAs: `Cancel order` and `Raise a claim`. Tapping
+`Cancel order` toggles a small tooltip — *"You cannot cancel the order at
+this stage"* — that dismisses on outside-click. The cancellation rule is
+prototype-only (production should derive eligibility from `statusId`).
 
 ### 2.2 Auto-expand rule
 
