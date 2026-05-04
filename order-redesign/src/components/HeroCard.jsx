@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Truck,
-  MessageSquareText,
+  Headphones,
   ChevronDown,
   Check,
   Copy,
@@ -49,9 +49,14 @@ export default function HeroCard({ order }) {
           <span className="w-2 h-2 rounded-full bg-[#6dffb8] animate-heroPulse" />
           Active order · #{order.id}
         </div>
-        <h2 className="mt-2 mb-1 text-[22px] font-bold tracking-[-0.02em] leading-[1.2]">
+        <h2 className="mt-2 mb-0 text-[22px] font-bold tracking-[-0.02em] leading-[1.2]">
           {statusHeadline(order)}
         </h2>
+        {order.estimatedDelivery && (
+          <div className="text-[18px] font-bold tracking-[-0.02em] leading-[1.2]">
+            Delivery by {order.estimatedDelivery}
+          </div>
+        )}
         <div className="text-[13.5px] opacity-85 leading-[1.4]">
           {desc.body}
         </div>
@@ -129,34 +134,32 @@ export default function HeroCard({ order }) {
           >
             <Truck size={16} strokeWidth={1.75} /> Track package
           </a>
-          <button className="flex-1 h-10 rounded-[10px] inline-flex items-center justify-center gap-1.5 bg-white/[.12] border border-white/[.22] text-white font-semibold text-[13.5px]">
-            <MessageSquareText size={16} strokeWidth={1.75} /> Help
-          </button>
+          <GhostBtn icon={Headphones} label="Get help" />
         </div>
 
-        <div className="mt-2 flex justify-between items-center -mx-1">
-          <CancelOrderPill />
-          <HeroPill icon={AlertTriangle} label="Raise a claim" />
+        <div className="mt-2 flex gap-2">
+          <CancelOrderButton />
+          <GhostBtn icon={AlertTriangle} label="Raise a claim" />
         </div>
       </div>
     </section>
   )
 }
 
-function HeroPill({ icon: Icon, label, ...rest }) {
+function GhostBtn({ icon: Icon, label, ...rest }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-1.5 px-1 py-1 rounded-full bg-transparent text-[12px] font-medium text-white/70 hover:text-white"
+      className="flex-1 h-10 rounded-[10px] inline-flex items-center justify-center gap-1.5 bg-white/[.12] border border-white/[.22] text-white font-semibold text-[13.5px]"
       {...rest}
     >
-      <Icon size={13} strokeWidth={1.75} className="opacity-80" />
+      <Icon size={16} strokeWidth={1.75} />
       {label}
     </button>
   )
 }
 
-function CancelOrderPill() {
+function CancelOrderButton() {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -170,25 +173,28 @@ function CancelOrderPill() {
   }, [open])
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative flex-1">
       {open && (
         <div
           role="status"
-          className="absolute bottom-full left-0 mb-2 w-max max-w-[240px] rounded-[10px] bg-ink text-white text-[11.5px] leading-[1.35] px-3 py-2 shadow-lg2 animate-slideDown"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[180px] rounded-[10px] bg-ink text-white text-[11.5px] leading-[1.35] px-3 py-2 text-center whitespace-normal shadow-lg2 animate-slideDown"
         >
           You cannot cancel the order at this stage
           <span
             aria-hidden
-            className="absolute top-full left-5 -mt-1 w-2 h-2 rotate-45 bg-ink"
+            className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 rotate-45 bg-ink"
           />
         </div>
       )}
-      <HeroPill
-        icon={X}
-        label="Cancel order"
+      <button
+        type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-      />
+        className="w-full h-10 rounded-[10px] inline-flex items-center justify-center gap-1.5 bg-white/[.12] border border-white/[.22] text-white font-semibold text-[13.5px]"
+      >
+        <X size={16} strokeWidth={1.75} />
+        Cancel order
+      </button>
     </div>
   )
 }

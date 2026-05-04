@@ -67,8 +67,10 @@ below it the customer sees:
 
 - For created / quality_check orders, the four-step **Full timeline** comes first — there is no in-card dot timeline above the product strip for these states, so the expanded timeline is the only one shown. For shipped orders the in-card dot timeline stays and the Full timeline sits at the very bottom of the expanded view (kept for parity).
 - The status banner (long form), the **Shipping progress** sub-timeline (shipped only), and the courier card with the "Track" link.
-- The **Order details** collapse with phone, address, order date, and "Change address" / "Change phone number" actions while the order is still in `created`.
-- The action row: `Cancel order` (in-progress orders) or `Receipt` (shipped) + `Get help`.
+- The **Order details** collapse with phone, address, order date, and "Change address" / "Change phone number" actions while the order is in any in-progress state (`created` or `quality_check`).
+- The action row:
+  - `created` / `quality_check`: `Cancel order` + `Change order details` (the latter programmatically opens the Order details collapse via ref so the change-address / change-phone pills are immediately visible).
+  - shipped: `Receipt` + `Get help`.
 
 Past-order cards (delivered, cancelled) are a separate, simpler component
 (`PastOrderCard`):
@@ -77,11 +79,17 @@ Past-order cards (delivered, cancelled) are a separate, simpler component
 - **Cancelled** carries no action row — the bottom border + button are removed entirely.
 
 The **hero card** (active in-flight order, currently the out-for-delivery
-order) carries an extra row of two pill actions beneath its primary
-`Track package` + `Help` CTAs: `Cancel order` and `Raise a claim`. Tapping
-`Cancel order` toggles a small tooltip — *"You cannot cancel the order at
-this stage"* — that dismisses on outside-click. The cancellation rule is
-prototype-only (production should derive eligibility from `statusId`).
+order) carries two stacked rows of full-width buttons beneath the headline,
+ETA subtitle, product strip, and dot timeline:
+
+- Row 1: `Track package` (filled white, brand-coloured text — only filled CTA in the app) + `Get help` (ghost, headphones icon).
+- Row 2: `Cancel order` + `Raise a claim` (both ghost, same size as row 1).
+
+Tapping `Cancel order` toggles a small dark tooltip centered above the button
+— *"You cannot cancel the order at this stage"* — dismissing on outside-click.
+The cancellation rule is prototype-only (production should derive eligibility
+from `statusId`). The `Delivery by [date]` line under the headline reads
+from `order.estimatedDelivery` and only renders when present.
 
 ### 2.2 Auto-expand rule
 

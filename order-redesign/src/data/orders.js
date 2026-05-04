@@ -66,7 +66,7 @@ export const ORDERS = [
     currency: 'AED',
     statusId: 'shipped',
     subStatusId: 'out_for_delivery',
-    estimatedDelivery: 'Wed, 29 Apr',
+    estimatedDelivery: 'May 4',
     state: 'open',
     courier: 'DHL Express',
     trackingNumber: '25193324',

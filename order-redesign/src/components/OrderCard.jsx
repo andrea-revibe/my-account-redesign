@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ChevronDown,
   Check,
@@ -8,6 +8,7 @@ import {
   Download,
   MessageSquareText,
   ExternalLink,
+  Settings2,
 } from 'lucide-react'
 import {
   STATUSES,
@@ -34,6 +35,10 @@ export default function OrderCard({ order, defaultExpanded = false }) {
   useEffect(() => {
     setExpanded(defaultExpanded)
   }, [defaultExpanded])
+  const detailsRef = useRef(null)
+  const openDetails = () => {
+    if (detailsRef.current) detailsRef.current.open = true
+  }
 
   const isInProgress =
     (order.statusId === 'created' || order.statusId === 'quality_check') &&
@@ -152,7 +157,11 @@ export default function OrderCard({ order, defaultExpanded = false }) {
 
           {isInProgress && fullTimeline}
 
-          <DetailsCollapse order={order} canEdit={isInProgress && order.statusId === 'created'} />
+          <DetailsCollapse
+            order={order}
+            canEdit={isInProgress}
+            detailsRef={detailsRef}
+          />
 
           <div className="flex gap-2">
             {showCancel ? (
@@ -160,7 +169,16 @@ export default function OrderCard({ order, defaultExpanded = false }) {
             ) : (
               <SecondaryBtn icon={Download} label="Receipt" />
             )}
-            <PrimaryBtn icon={MessageSquareText} label="Get help" />
+            {isInProgress ? (
+              <PrimaryBtn
+                icon={Settings2}
+                label="Change order details"
+                variant="outline"
+                onClick={openDetails}
+              />
+            ) : (
+              <PrimaryBtn icon={MessageSquareText} label="Get help" />
+            )}
           </div>
 
           {!isInProgress && fullTimeline}
@@ -301,9 +319,12 @@ function StatusBannerInline({ desc }) {
   )
 }
 
-function DetailsCollapse({ order, canEdit }) {
+function DetailsCollapse({ order, canEdit, detailsRef }) {
   return (
-    <details className="group rounded-[12px] border border-line bg-surface overflow-hidden">
+    <details
+      ref={detailsRef}
+      className="group rounded-[12px] border border-line bg-surface overflow-hidden"
+    >
       <summary className="flex items-center justify-between px-3.5 py-3 text-[13px] font-semibold text-ink cursor-pointer list-none [&::-webkit-details-marker]:hidden">
         <span>Order details</span>
         <ChevronDown
@@ -356,9 +377,17 @@ function DetailRow({ k, v }) {
   )
 }
 
-function PrimaryBtn({ icon: Icon, label }) {
+function PrimaryBtn({ icon: Icon, label, onClick, variant = 'filled' }) {
+  const styles =
+    variant === 'outline'
+      ? 'bg-surface text-brand border-brand'
+      : 'bg-brand text-white border-brand'
   return (
-    <button className="flex-1 h-[42px] rounded-[10px] inline-flex items-center justify-center gap-1.5 bg-brand text-white border border-brand font-semibold text-[13.5px]">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 h-[42px] rounded-[10px] inline-flex items-center justify-center gap-1.5 border font-semibold text-[13.5px] ${styles}`}
+    >
       <Icon size={16} strokeWidth={1.75} />
       {label}
     </button>

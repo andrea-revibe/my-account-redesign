@@ -6,12 +6,21 @@ Internal demo project. Format roughly follows [Keep a Changelog](https://keepach
 
 ### Added
 
-- **Hero card secondary action row.** Beneath the primary `Track package` + `Help` CTAs, the hero now carries two ghost pill actions (transparent bg, soft white-70 text on the gradient): `Cancel order` flush-left, `Raise a claim` flush-right. Tapping `Cancel order` toggles a small dark tooltip — *"You cannot cancel the order at this stage"* — that dismisses on outside-click. Cancellation eligibility logic is prototype-only.
+- **Hero card secondary action row.** Beneath the primary `Track package` + `Get help` CTAs, the hero now carries a second row of two same-sized ghost buttons (`bg-white/[.12]` / white border, white text, matching the `Get help` style): `Cancel order` + `Raise a claim`. Tapping `Cancel order` toggles a small dark tooltip — *"You cannot cancel the order at this stage"* — centered above the button and dismissing on outside-click. Cancellation eligibility logic is prototype-only.
+- **"Delivery by [date]" subtitle in the hero.** Renders directly under the status headline ("Out for delivery") when `order.estimatedDelivery` is present. Data-driven, follows the same pattern as the in-card eta block.
+- **`Change order details` action on in-progress order cards.** Replaces `Get help` on `created` + `quality_check` cards. Clicking it programmatically opens the `<details>` collapse (via ref) so `Change address` + `Change phone number` are immediately visible.
+- **Edit pills on `quality_check`.** `canEdit` now covers all in-progress states (was `created`-only), so the quality-check expanded view also surfaces `Change address` + `Change phone number` pills inside Order details.
 - **Past-delivered "Raise a claim" pill.** Delivered `PastOrderCard` now renders both `Download receipt` **and** `Raise a claim`, right-aligned with a small gap.
 
 ### Changed
 
-- **In-progress timeline dedup.** For `created` and `quality_check` orders, the in-card dot timeline (`DotBar`) no longer renders above the product strip — the same progression was being shown twice. The four-step Full timeline now sits **above** Order details / Cancel / Get help inside the expanded view. Shipped orders are unchanged: in-card dot timeline + Full timeline at the bottom.
+- **`MessageSquareText` → `Headphones` for hero help button.** Reads more clearly as "contact a person" and visually pairs with the `Truck` icon on Track package. Label also tightened from "Help" to "Get help" to match the rest of the app.
+- **Shipped order `estimatedDelivery`** updated from `'Wed, 29 Apr'` to `'May 4'` so the new hero ETA subtitle reads sensibly given the prototype's current date.
+- **`STATUSES.quality_check.short`** renamed `QC` → `Quality Check` so the dot-timeline label is fully spelled out under both the hero and the shipped OrderCard's main-card timeline.
+- **Hero ETA subtitle bumped** from `text-[14px] font-semibold` to match the headline (`text-[22px] font-bold tracking-[-0.02em]`), so "Delivery by [date]" reads as a paired second line of the title rather than a sub-eyebrow.
+- **`Change order details` button restyled** outline-purple (`bg-surface text-brand border-brand`) via a new `variant="outline"` prop on `PrimaryBtn`. Visually distinguishes it from the filled-purple `Get help` used on shipped cards.
+- **Cancel-order tooltip width fixed** at `w-[180px]` with `whitespace-normal` + `text-center` so it wraps to two lines and stays inside the hero section's `overflow-hidden` clip even when centered above the Cancel order button.
+- **In-progress timeline dedup.** For `created` and `quality_check` orders, the in-card dot timeline (`DotBar`) no longer renders above the product strip — the same progression was being shown twice. The four-step Full timeline now sits **above** Order details / Cancel / Change order details inside the expanded view. Shipped orders are unchanged: in-card dot timeline + Full timeline at the bottom.
 
 ### Removed
 

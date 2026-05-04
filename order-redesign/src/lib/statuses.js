@@ -3,7 +3,7 @@
 // label used under the compact dot timelines on collapsed cards and the hero.
 export const STATUSES = [
   { id: 'created', label: 'Order placed', short: 'Placed' },
-  { id: 'quality_check', label: 'Quality check', short: 'QC' },
+  { id: 'quality_check', label: 'Quality check', short: 'Quality Check' },
   { id: 'shipped', label: 'Shipped', short: 'Shipped' },
   { id: 'delivered', label: 'Delivered', short: 'Delivered' },
 ]
